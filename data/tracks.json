@@ -1,0 +1,63 @@
+[
+  {
+    "raceName": "Bahrain Grand Prix",
+    "fastf1Names": ["Bahrain Grand Prix", "Bahrain"],
+    "country": "Bahrain",
+    "circuit": "Bahrain International Circuit",
+    "laps": 57,
+    "lengthKm": 5.412,
+    "raceDistanceKm": 308.238,
+    "photo": "assets/tracks/bahrain.png",
+    "strategyContext": {
+      "tyreStress": "High",
+      "overtakingDifficulty": "Medium",
+      "pitLaneSensitivity": "Medium"
+    }
+  },
+  {
+    "raceName": "Saudi Arabian Grand Prix",
+    "fastf1Names": ["Saudi Arabian Grand Prix", "Saudi Arabia"],
+    "country": "Saudi Arabia",
+    "circuit": "Jeddah Corniche Circuit",
+    "laps": 50,
+    "lengthKm": 6.174,
+    "raceDistanceKm": 308.45,
+    "photo": "assets/tracks/saudi_arabia.png",
+    "strategyContext": {
+      "tyreStress": "Medium",
+      "overtakingDifficulty": "Medium",
+      "pitLaneSensitivity": "High"
+    }
+  },
+  {
+    "raceName": "British Grand Prix",
+    "fastf1Names": ["British Grand Prix", "Great Britain"],
+    "country": "United Kingdom",
+    "circuit": "Silverstone Circuit",
+    "laps": 52,
+    "lengthKm": 5.891,
+    "raceDistanceKm": 306.198,
+    "photo": "assets/tracks/britain.png",
+    "strategyContext": {
+      "tyreStress": "High",
+      "overtakingDifficulty": "Medium",
+      "pitLaneSensitivity": "Medium"
+    }
+  },
+  {
+    "raceName": "Italian Grand Prix",
+    "fastf1Names": ["Italian Grand Prix", "Italy"],
+    "country": "Italy",
+    "circuit": "Autodromo Nazionale Monza",
+    "laps": 53,
+    "lengthKm": 5.793,
+    "raceDistanceKm": 306.72,
+    "photo": "assets/tracks/italy.png",
+    "strategyContext": {
+      "tyreStress": "Medium",
+      "overtakingDifficulty": "Low",
+      "pitLaneSensitivity": "Medium"
+    }
+  }
+]
+

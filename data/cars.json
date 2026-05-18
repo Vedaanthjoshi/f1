@@ -1,0 +1,35 @@
+[
+  {
+    "id": "red_bull_rb20",
+    "team": "Red Bull Racing",
+    "name": "RB20",
+    "season": 2024,
+    "engine": "Honda RBPT",
+    "image": "assets/cars/red_bull_rb20.png"
+  },
+  {
+    "id": "ferrari_sf24",
+    "team": "Ferrari",
+    "name": "SF-24",
+    "season": 2024,
+    "engine": "Ferrari",
+    "image": "assets/cars/ferrari_sf24.png"
+  },
+  {
+    "id": "mercedes_w15",
+    "team": "Mercedes",
+    "name": "W15",
+    "season": 2024,
+    "engine": "Mercedes",
+    "image": "assets/cars/mercedes_w15.png"
+  },
+  {
+    "id": "mclaren_mcl38",
+    "team": "McLaren",
+    "name": "MCL38",
+    "season": 2024,
+    "engine": "Mercedes",
+    "image": "assets/cars/mclaren_mcl38.png"
+  }
+]
+

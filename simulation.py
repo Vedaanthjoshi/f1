@@ -35,8 +35,9 @@ def simulate_undercut_window(model, current_lap, current_state, track_env, pit_l
     track_env dataframe requires mapping for: track_evolution, TrackTemp for future laps
     """
     sim_horizon = 15
-    stay_out_curve = []
-    pit_now_curve = []
+    stay_out_lap_times = []
+    pit_now_lap_times = []
+    feature_columns = ['tyre_age', 'compound_encoded', 'baseline_pace', 'track_evolution', 'TrackTemp']
     
     # Track environment dictionaries (to easily lookup future laps)
     evo_map = track_env.set_index('LapNumber')['track_evolution'].to_dict()
@@ -51,13 +52,13 @@ def simulate_undercut_window(model, current_lap, current_state, track_env, pit_l
         
         # 1. Stay Out Prediction
         # Features: tyre_age, compound_encoded, baseline_pace, track_evolution, TrackTemp
-        stay_out_features = [[
-            current_state['tyre_age'] + n, 
-            current_state['compound_encoded'], 
-            current_state['baseline_pace'], 
-            evo, 
-            temp
-        ]]
+        stay_out_features = pd.DataFrame([{
+            'tyre_age': current_state['tyre_age'] + n,
+            'compound_encoded': current_state['compound_encoded'],
+            'baseline_pace': current_state['baseline_pace'],
+            'track_evolution': evo,
+            'TrackTemp': temp
+        }], columns=feature_columns)
         stay_out_degradation = model.predict(stay_out_features)[0]
         stay_out_predicted_time = current_state['baseline_pace'] + stay_out_degradation
         
@@ -65,16 +66,16 @@ def simulate_undercut_window(model, current_lap, current_state, track_env, pit_l
         # fuel_mass = 110 - (1.7 * lap_number), correction = mass * 0.03
         fuel_correction = (110.0 - (1.7 * target_lap)) * 0.03
         stay_out_actual = stay_out_predicted_time + fuel_correction
-        stay_out_curve.append(stay_out_actual)
+        stay_out_lap_times.append(stay_out_actual)
         
         # 2. Pit Now Prediction
-        pit_features = [[
-            1 + n, # Fresh tyres starting at Age 1 on the out-lap
-            next_compound_encoded, 
-            current_state['baseline_pace'], 
-            evo, 
-            temp
-        ]]
+        pit_features = pd.DataFrame([{
+            'tyre_age': 1 + n,
+            'compound_encoded': next_compound_encoded,
+            'baseline_pace': current_state['baseline_pace'],
+            'track_evolution': evo,
+            'TrackTemp': temp
+        }], columns=feature_columns)
         pit_degradation = model.predict(pit_features)[0]
         pit_predicted_time = current_state['baseline_pace'] + pit_degradation
         pit_actual = pit_predicted_time + fuel_correction
@@ -83,15 +84,15 @@ def simulate_undercut_window(model, current_lap, current_state, track_env, pit_l
         if n == 0:
             pit_actual += pit_loss_delta
             
-        pit_now_curve.append(pit_actual)
+        pit_now_lap_times.append(pit_actual)
 
     # 3. Find Crossover Lap
-    # First lap where pitting provides a faster cumulative or direct lap time?
-    # Actually, in F1 "undercut" refers to cumulative race time being faster. 
-    # But usually, the "Pit Now < Stay Out curve" means the lap time itself drops below the stay out lap time.
-    # The PRD states: "Crossover lap = first lap where Pit Now curve < Stay Out curve"
+    # An undercut is a cumulative race-time decision: the pit option must recover
+    # the pit loss and become faster across the forecast horizon.
+    stay_out_curve = pd.Series(stay_out_lap_times).cumsum().tolist()
+    pit_now_curve = pd.Series(pit_now_lap_times).cumsum().tolist()
     crossover_relative = None
-    for n in range(1, sim_horizon): # Start from lap 1 since lap 0 includes 25s pit loss
+    for n in range(1, sim_horizon):  # Start from lap 1 since lap 0 includes pit loss
         if pit_now_curve[n] < stay_out_curve[n]:
             crossover_relative = n
             break
@@ -106,6 +107,8 @@ def simulate_undercut_window(model, current_lap, current_state, track_env, pit_l
     return {
         'stay_out_curve': stay_out_curve,
         'pit_now_curve': pit_now_curve,
+        'stay_out_lap_times': stay_out_lap_times,
+        'pit_now_lap_times': pit_now_lap_times,
         'crossover_lap': crossover_lap,
         'window_open': window_open
     }

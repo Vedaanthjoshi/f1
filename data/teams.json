@@ -1,0 +1,31 @@
+[
+  {
+    "name": "Red Bull Racing",
+    "shortName": "Red Bull",
+    "base": "Milton Keynes, United Kingdom",
+    "accentColor": "#3671C6",
+    "secondaryColor": "#E10600"
+  },
+  {
+    "name": "Ferrari",
+    "shortName": "Ferrari",
+    "base": "Maranello, Italy",
+    "accentColor": "#E80020",
+    "secondaryColor": "#FFD166"
+  },
+  {
+    "name": "Mercedes",
+    "shortName": "Mercedes",
+    "base": "Brackley, United Kingdom",
+    "accentColor": "#27F4D2",
+    "secondaryColor": "#C8CCCE"
+  },
+  {
+    "name": "McLaren",
+    "shortName": "McLaren",
+    "base": "Woking, United Kingdom",
+    "accentColor": "#FF8000",
+    "secondaryColor": "#47C7FC"
+  }
+]
+

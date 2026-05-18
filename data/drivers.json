@@ -1,0 +1,75 @@
+[
+  {
+    "code": "VER",
+    "name": "Max Verstappen",
+    "number": 1,
+    "team": "Red Bull Racing",
+    "country": "Netherlands",
+    "photo": "assets/drivers/VER.png",
+    "carId": "red_bull_rb20"
+  },
+  {
+    "code": "PER",
+    "name": "Sergio Perez",
+    "number": 11,
+    "team": "Red Bull Racing",
+    "country": "Mexico",
+    "photo": "assets/drivers/PER.png",
+    "carId": "red_bull_rb20"
+  },
+  {
+    "code": "LEC",
+    "name": "Charles Leclerc",
+    "number": 16,
+    "team": "Ferrari",
+    "country": "Monaco",
+    "photo": "assets/drivers/LEC.png",
+    "carId": "ferrari_sf24"
+  },
+  {
+    "code": "SAI",
+    "name": "Carlos Sainz",
+    "number": 55,
+    "team": "Ferrari",
+    "country": "Spain",
+    "photo": "assets/drivers/SAI.png",
+    "carId": "ferrari_sf24"
+  },
+  {
+    "code": "HAM",
+    "name": "Lewis Hamilton",
+    "number": 44,
+    "team": "Mercedes",
+    "country": "United Kingdom",
+    "photo": "assets/drivers/HAM.png",
+    "carId": "mercedes_w15"
+  },
+  {
+    "code": "RUS",
+    "name": "George Russell",
+    "number": 63,
+    "team": "Mercedes",
+    "country": "United Kingdom",
+    "photo": "assets/drivers/RUS.png",
+    "carId": "mercedes_w15"
+  },
+  {
+    "code": "NOR",
+    "name": "Lando Norris",
+    "number": 4,
+    "team": "McLaren",
+    "country": "United Kingdom",
+    "photo": "assets/drivers/NOR.png",
+    "carId": "mclaren_mcl38"
+  },
+  {
+    "code": "PIA",
+    "name": "Oscar Piastri",
+    "number": 81,
+    "team": "McLaren",
+    "country": "Australia",
+    "photo": "assets/drivers/PIA.png",
+    "carId": "mclaren_mcl38"
+  }
+]
+
