@@ -9,7 +9,7 @@ from ui.metadata import cars, drivers, missing_assets, teams, tracks
 
 def _table(records: list[dict], columns: list[str]) -> None:
     if records:
-        st.dataframe(pd.DataFrame(records)[columns], use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(records)[columns], width='stretch', hide_index=True)
     else:
         state_message("empty", "No Metadata", "No records were found for this metadata type.")
 
@@ -29,7 +29,7 @@ def render() -> None:
         )
         st.dataframe(
             pd.DataFrame([item.__dict__ for item in missing]),
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
     else:

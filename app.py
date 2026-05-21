@@ -3,6 +3,8 @@ import fastf1
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import joblib
+import os
 
 from ui.charts import style_chart
 from ui.homepage import (
@@ -16,7 +18,7 @@ from ui.metadata import driver_profile
 # Local backend modules
 from data_pipeline import is_red_flag_race, clean_lap_data, merge_weather_data
 from feature_engineering import apply_feature_engineering
-from ml_model import prepare_ml_data, train_degradation_model
+from ml_model import prepare_ml_data
 from simulation import calculate_pit_loss, simulate_undercut_window
 
 # App Config
@@ -40,12 +42,28 @@ def load_race_data(year, race_name):
     session.load(weather=True, messages=False)
     return session
 
+@st.cache_resource(show_spinner=False)
+def load_global_model():
+    model_path = os.path.join('models', 'global_degradation_model.joblib')
+    if not os.path.exists(model_path):
+        return None, None
+    saved_obj = joblib.load(model_path)
+    model = saved_obj['model']
+    features = saved_obj['features']
+    
+    # Inference is faster on CPU and avoids device mismatch warnings since pandas is CPU-bound
+    try:
+        model.set_params(device='cpu')
+    except:
+        pass
+        
+    return model, features
 
 @st.cache_data(show_spinner=False)
 def process_backend_pipeline(_session):
     """
-    Executes Phase 1-4 pipeline on the cached session.
-    Returns the ready-to-chart data and trained ML model.
+    Executes Phase 1-2 pipeline on the cached session to get the data for plotting.
+    Returns the ready-to-chart data and pit loss.
     """
     # Phase 1
     if is_red_flag_race(_session):
@@ -61,14 +79,12 @@ def process_backend_pipeline(_session):
 
     # Phase 3
     ml_data = prepare_ml_data(engineered_data)
-    model, features = train_degradation_model(ml_data)
 
     # Phase 4 (Pit loss)
     pit_loss = calculate_pit_loss(_session)
 
     return {
         "ml_data": ml_data,
-        "model": model,
         "pit_loss": pit_loss,
     }, None
 
@@ -79,24 +95,57 @@ def load_requested_race(year, race_name):
     st.session_state["race"] = race_name
 
 
+def sync_season(source):
+    if source == 'sidebar':
+        st.session_state.home_season = st.session_state.sidebar_season
+    else:
+        st.session_state.sidebar_season = st.session_state.home_season
+
+def sync_race(source):
+    if source == 'sidebar':
+        st.session_state.home_race = st.session_state.sidebar_race
+    else:
+        st.session_state.sidebar_race = st.session_state.home_race
+
 def render_race_setup(season, races, race):
     st.sidebar.caption("F1 Strategy Engineer")
     st.sidebar.header("Race Setup")
-    sidebar_season = st.sidebar.selectbox("Season", list(range(2025, 2017, -1)), index=list(range(2025, 2017, -1)).index(season))
-    sidebar_races = races
-    sidebar_race = race
+    
+    # Initialize session state if not present
+    if "sidebar_season" not in st.session_state:
+        st.session_state.sidebar_season = season
+        st.session_state.home_season = season
+    if "sidebar_race" not in st.session_state:
+        st.session_state.sidebar_race = race
+        st.session_state.home_race = race
 
+    sidebar_season = st.sidebar.selectbox(
+        "Season", 
+        list(range(2025, 2017, -1)), 
+        key="sidebar_season",
+        on_change=sync_season,
+        args=('sidebar',)
+    )
+    
+    sidebar_races = races
     if sidebar_season != season:
         with st.spinner(f"Loading {sidebar_season} schedule..."):
             sidebar_races = get_schedule(sidebar_season)
-        sidebar_race = sidebar_races[0]
+            
+    # Ensure the race is valid for the season
+    if st.session_state.sidebar_race not in sidebar_races:
+        st.session_state.sidebar_race = sidebar_races[0]
+        st.session_state.home_race = sidebar_races[0]
 
     sidebar_race = st.sidebar.selectbox(
         "Grand Prix",
         sidebar_races,
-        index=sidebar_races.index(sidebar_race) if sidebar_race in sidebar_races else 0,
+        key="sidebar_race",
+        on_change=sync_race,
+        args=('sidebar',)
     )
-    if st.sidebar.button("Load Selected Race", use_container_width=True):
+    
+    if st.sidebar.button("Load Selected Race", width='stretch'):
         load_requested_race(sidebar_season, sidebar_race)
 
     st.markdown("### Race Entry")
@@ -107,27 +156,35 @@ def render_race_setup(season, races, race):
         home_season = st.selectbox(
             "Season",
             list(range(2025, 2017, -1)),
-            index=list(range(2025, 2017, -1)).index(season),
             key="home_season",
+            on_change=sync_season,
+            args=('home',)
         )
+        
         home_races = races
         if home_season != season:
             with st.spinner(f"Loading {home_season} schedule..."):
                 home_races = get_schedule(home_season)
-        home_race_default = race if race in home_races else home_races[0]
+                
+        # Ensure the race is valid for the season
+        if st.session_state.home_race not in home_races:
+            st.session_state.home_race = home_races[0]
+            st.session_state.sidebar_race = home_races[0]
+
         home_race = st.selectbox(
             "Grand Prix",
             home_races,
-            index=home_races.index(home_race_default),
             key="home_race",
+            on_change=sync_race,
+            args=('home',)
         )
-        if st.button("Load Race Strategy Data", use_container_width=True):
+        if st.button("Load Race Strategy Data", width='stretch'):
             load_requested_race(home_season, home_race)
 
     with launch_col:
         st.markdown("#### Strategy Brief")
         st.write(
-            "The race engine will train on FastF1 lap data, calculate pit loss, and prepare the undercut dashboard for the selected Grand Prix."
+            "The race engine will prepare real telemetry data and leverage the pre-trained Global AI Model to simulate undercut strategies."
         )
 
     active_year = st.session_state.get("year", season)
@@ -146,7 +203,12 @@ def render_race_setup(season, races, race):
 
 
 def render_strategy_dashboard():
-    with st.spinner(f"Downloading telemetry and processing ML pipeline for {st.session_state['race']}..."):
+    model, features = load_global_model()
+    if model is None:
+        st.error("Global Model not found! Please run `python train_global_model.py` first.")
+        return
+
+    with st.spinner(f"Downloading telemetry for {st.session_state['race']}..."):
         session = load_race_data(st.session_state["year"], st.session_state["race"])
         backend_payload, error_msg = process_backend_pipeline(session)
 
@@ -154,10 +216,9 @@ def render_strategy_dashboard():
         st.error(error_msg)
         return
 
-    st.success("Pipeline executed successfully. Mathematical model trained.")
+    st.success("Telemetry processed. Global AI Model loaded and ready.")
 
     ml_data = backend_payload["ml_data"]
-    model = backend_payload["model"]
     pit_loss = backend_payload["pit_loss"]
 
     # Get Finisher List
@@ -215,7 +276,7 @@ def render_strategy_dashboard():
         selector=dict(mode="markers"),
     )
     fig1.update_layout(legend_title_text="")
-    st.plotly_chart(style_chart(fig1), use_container_width=True)
+    st.plotly_chart(style_chart(fig1), width='stretch')
 
     # 2. Gap Evolution Chart
     st.subheader("Gap Evolution")
@@ -243,7 +304,7 @@ def render_strategy_dashboard():
         yaxis_title=f"Gap to {driver_b} (seconds)",
         legend_title_text="",
     )
-    st.plotly_chart(style_chart(fig2), use_container_width=True)
+    st.plotly_chart(style_chart(fig2), width='stretch')
 
     # 3. Undercut Simulation
     st.divider()
@@ -270,6 +331,8 @@ def render_strategy_dashboard():
         "tyre_age": driver_state_df.iloc[0]["tyre_age"],
         "compound_encoded": driver_state_df.iloc[0]["compound_encoded"],
         "baseline_pace": driver_state_df.iloc[0]["baseline_pace"],
+        "Track": st.session_state["race"],
+        "Driver": driver_a,
     }
 
     track_env = ml_data[["LapNumber", "track_evolution", "TrackTemp"]].drop_duplicates("LapNumber")
@@ -281,14 +344,14 @@ def render_strategy_dashboard():
         track_env=track_env,
         pit_loss_delta=pit_loss,
         next_compound_encoded=comp_map[next_compound],
+        feature_cols=features
     )
 
     horizon_laps = list(range(sim_lap, sim_lap + 15))
     sim_plot_df = pd.DataFrame(
         {
             "Lap": horizon_laps,
-            "Stay Out Time": sim_result["stay_out_curve"],
-            "Pit Now Time": sim_result["pit_now_curve"],
+            "Net Advantage": sim_result["net_undercut_advantage"],
         }
     )
 
@@ -296,42 +359,37 @@ def render_strategy_dashboard():
     fig3.add_trace(
         go.Scatter(
             x=sim_plot_df["Lap"],
-            y=sim_plot_df["Stay Out Time"],
-            mode="lines",
-            name="Stay Out (Old Tyres)",
-            line=dict(color="#08090B", width=2.5),
+            y=sim_plot_df["Net Advantage"],
+            mode="lines+markers",
+            name="Net Time Gained (s)",
+            line=dict(color="#E10600", width=3),
+            marker=dict(size=8, color="#E10600", line=dict(width=1, color="white"))
         )
     )
-    fig3.add_trace(
-        go.Scatter(
-            x=sim_plot_df["Lap"],
-            y=sim_plot_df["Pit Now Time"],
-            mode="lines",
-            name=f"Pit Now ({next_compound})",
-            line=dict(color="#E10600", width=2.5, dash="dash"),
-        )
-    )
+    
+    # Add zero-line to show where the advantage becomes positive
+    fig3.add_hline(y=0, line_dash="solid", line_color="#08090B", opacity=0.3)
 
     if sim_result["crossover_lap"]:
         fig3.add_vline(
             x=sim_result["crossover_lap"],
             line_dash="dash",
             line_color="#FFD166",
-            annotation_text="Crossover Lap",
+            annotation_text="Tyres Become Slower",
         )
 
     fig3.update_layout(
-        title="Prediction: Stay Out vs Pit Now Cumulative Time",
+        title="Net Undercut Advantage (Pitting Now vs Staying Out)",
         xaxis_title="Race Lap",
-        yaxis_title="Projected Time From Current Lap (s)",
+        yaxis_title="Seconds Gained (+) or Lost (-) per lap",
         legend_title_text="",
     )
-    st.plotly_chart(style_chart(fig3), use_container_width=True)
+    st.plotly_chart(style_chart(fig3), width='stretch')
 
     if sim_result["window_open"]:
-        st.success(f"UNDERCUT WINDOW OPEN. Pitting {driver_a} now is projected to recover the pit loss by Lap {sim_result['crossover_lap']}.")
+        st.success(f"UNDERCUT WINDOW OPEN. Pitting {driver_a} now gives an immediate, compounding pace advantage over cars staying out on old tyres.")
     elif sim_result["crossover_lap"]:
-        st.info(f"Window opens soon. Crossover point is Lap {sim_result['crossover_lap']}.")
+        st.info(f"Pace crossover happens on Lap {sim_result['crossover_lap']}. Old tyres will become slower than fresh tyres then.")
     else:
         st.error("Window is firmly closed. Staying out is faster for the foreseeable horizon.")
 
@@ -350,3 +408,4 @@ if "year" in st.session_state and "race" in st.session_state:
     render_strategy_dashboard()
 else:
     st.info("Choose a season and Grand Prix, then load race strategy data to open the analysis dashboard.")
+
