@@ -68,8 +68,125 @@
     "number": 81,
     "team": "McLaren",
     "country": "Australia",
-    "photo": "assets/drivers/PIA.png",
+    "photo": "assets/drivers/PIA.jpg",
     "carId": "mclaren_mcl38"
+  },
+  {
+    "code": "ALO",
+    "name": "Fernando Alonso",
+    "number": 14,
+    "team": "Aston Martin",
+    "country": "Spain",
+    "photo": "assets/drivers/ALO.jpg",
+    "carId": "aston_martin_amr24"
+  },
+  {
+    "code": "STR",
+    "name": "Lance Stroll",
+    "number": 18,
+    "team": "Aston Martin",
+    "country": "Canada",
+    "photo": "assets/drivers/STR.jpg",
+    "carId": "aston_martin_amr24"
+  },
+  {
+    "code": "TSU",
+    "name": "Yuki Tsunoda",
+    "number": 22,
+    "team": "RB",
+    "country": "Japan",
+    "photo": "assets/drivers/TSU.jpg",
+    "carId": "rb_vcarb01"
+  },
+  {
+    "code": "RIC",
+    "name": "Daniel Ricciardo",
+    "number": 3,
+    "team": "RB",
+    "country": "Australia",
+    "photo": "assets/drivers/RIC.jpg",
+    "carId": "rb_vcarb01"
+  },
+  {
+    "code": "ALB",
+    "name": "Alexander Albon",
+    "number": 23,
+    "team": "Williams",
+    "country": "Thailand",
+    "photo": "assets/drivers/ALB.jpg",
+    "carId": "williams_fw46"
+  },
+  {
+    "code": "SAR",
+    "name": "Logan Sargeant",
+    "number": 2,
+    "team": "Williams",
+    "country": "United States",
+    "photo": "assets/drivers/SAR.jpg",
+    "carId": "williams_fw46"
+  },
+  {
+    "code": "COL",
+    "name": "Franco Colapinto",
+    "number": 43,
+    "team": "Williams",
+    "country": "Argentina",
+    "photo": "assets/drivers/COL.jpg",
+    "carId": "williams_fw46"
+  },
+  {
+    "code": "GAS",
+    "name": "Pierre Gasly",
+    "number": 10,
+    "team": "Alpine",
+    "country": "France",
+    "photo": "assets/drivers/GAS.jpg",
+    "carId": "alpine_a524"
+  },
+  {
+    "code": "OCO",
+    "name": "Esteban Ocon",
+    "number": 31,
+    "team": "Alpine",
+    "country": "France",
+    "photo": "assets/drivers/OCO.jpg",
+    "carId": "alpine_a524"
+  },
+  {
+    "code": "HUL",
+    "name": "Nico Hulkenberg",
+    "number": 27,
+    "team": "Haas",
+    "country": "Germany",
+    "photo": "assets/drivers/HUL.jpg",
+    "carId": "haas_vf24"
+  },
+  {
+    "code": "MAG",
+    "name": "Kevin Magnussen",
+    "number": 20,
+    "team": "Haas",
+    "country": "Denmark",
+    "photo": "assets/drivers/MAG.jpg",
+    "carId": "haas_vf24"
+  },
+  {
+    "code": "BOT",
+    "name": "Valtteri Bottas",
+    "number": 77,
+    "team": "Kick Sauber",
+    "country": "Finland",
+    "photo": "assets/drivers/BOT.jpg",
+    "carId": "sauber_c44"
+  },
+  {
+    "code": "ZHO",
+    "name": "Zhou Guanyu",
+    "number": 24,
+    "team": "Kick Sauber",
+    "country": "China",
+    "photo": "assets/drivers/ZHO.jpg",
+    "carId": "sauber_c44"
   }
 ]
 

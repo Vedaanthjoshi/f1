@@ -1,51 +1,131 @@
-"""Iteration 3 homepage components for the main Streamlit app."""
+"""Cinematic dark motorsport homepage components for the F1 Strategy Engineer app."""
 
 from __future__ import annotations
 
 from html import escape
 from textwrap import dedent
+from pathlib import Path
 
 import streamlit as st
 
 from ui.assets import image_data_uri
-from ui.metadata import driver_profile, get_track
+from ui.metadata import PROJECT_ROOT, driver_profile, get_track
 
 HOMEPAGE_IMAGE = "assets/home/homepage_hero.webp"
 
 
-def homepage_css() -> str:
+def homepage_css(driver_a: str | None = None, driver_b: str | None = None) -> str:
+    profile_a = driver_profile(driver_a) if driver_a else None
+    profile_b = driver_profile(driver_b) if driver_b else None
+
+    car_a_uri = None
+    if profile_a and profile_a.get("carImagePath"):
+        try:
+            rel = str(Path(profile_a["carImagePath"]).relative_to(PROJECT_ROOT)).replace("\\", "/")
+            car_a_uri = image_data_uri(rel)
+        except Exception:
+            pass
+
+    car_b_uri = None
+    if profile_b and profile_b.get("carImagePath"):
+        try:
+            rel = str(Path(profile_b["carImagePath"]).relative_to(PROJECT_ROOT)).replace("\\", "/")
+            car_b_uri = image_data_uri(rel)
+        except Exception:
+            pass
+
+    accent_a = profile_a["team"].get("accentColor", "#3671C6") if profile_a else "#3671C6"
+    accent_b = profile_b["team"].get("accentColor", "#27F4D2") if profile_b else "#27F4D2"
     hero_image = image_data_uri(HOMEPAGE_IMAGE)
-    page_background = (
-        f"linear-gradient(90deg, rgba(246, 247, 248, 0.62) 0%, rgba(246, 247, 248, 0.30) 34%, rgba(246, 247, 248, 0.38) 58%, rgba(246, 247, 248, 0.88) 82%, rgba(246, 247, 248, 0.94) 100%), "
-        f"linear-gradient(180deg, rgba(246, 247, 248, 0.04) 0%, rgba(246, 247, 248, 0.38) 50%, rgba(246, 247, 248, 0.88) 78%, #f2f3f5 100%), "
-        f"url('{hero_image}')"
-        if hero_image
-        else "linear-gradient(135deg, #f5f6f7, #dfe2e6)"
-    )
+
+    if car_a_uri or car_b_uri:
+        bg_layers = []
+        bg_positions = []
+        bg_sizes = []
+        bg_repeats = []
+
+        # Layer 1: Dark cinematic readability vignette (darker at bottom for charts/panels)
+        bg_layers.append("linear-gradient(180deg, rgba(7, 9, 13, 0.45) 0%, rgba(7, 9, 13, 0.20) 25%, rgba(7, 9, 13, 0.65) 55%, #07090D 92%)")
+        bg_positions.append("center top")
+        bg_sizes.append("cover")
+        bg_repeats.append("no-repeat")
+
+        # Layer 2: Center glowing vertical laser / clash divider
+        bg_layers.append("linear-gradient(112deg, transparent 49.3%, rgba(225, 6, 0, 0.35) 49.6%, rgba(255, 255, 255, 0.95) 50%, rgba(39, 244, 210, 0.35) 50.4%, transparent 50.7%)")
+        bg_positions.append("center top")
+        bg_sizes.append("cover")
+        bg_repeats.append("no-repeat")
+
+        # Layer 3: Left Car (Driver A) - large, prominent, unclipped
+        if car_a_uri:
+            bg_layers.append(f"url('{car_a_uri}')")
+            bg_positions.append("left 0% top 14vh")
+            bg_sizes.append("50vw auto")
+            bg_repeats.append("no-repeat")
+
+        # Layer 4: Right Car (Driver B) - large, prominent, unclipped
+        if car_b_uri:
+            bg_layers.append(f"url('{car_b_uri}')")
+            bg_positions.append("right 0% top 14vh")
+            bg_sizes.append("50vw auto")
+            bg_repeats.append("no-repeat")
+
+        # Layer 5: Left team ambient lighting & smoke glow
+        bg_layers.append(f"radial-gradient(circle at 16% 32%, {accent_a}50 0%, {accent_a}10 40%, transparent 65%)")
+        bg_positions.append("center top")
+        bg_sizes.append("cover")
+        bg_repeats.append("no-repeat")
+
+        # Layer 6: Right team ambient lighting & smoke glow
+        bg_layers.append(f"radial-gradient(circle at 84% 32%, {accent_b}50 0%, {accent_b}10 40%, transparent 65%)")
+        bg_positions.append("center top")
+        bg_sizes.append("cover")
+        bg_repeats.append("no-repeat")
+
+        # Layer 7: Deep obsidian dark base
+        bg_layers.append("linear-gradient(135deg, #07090D 0%, #0D1117 100%)")
+        bg_positions.append("center top")
+        bg_sizes.append("cover")
+        bg_repeats.append("no-repeat")
+
+        page_bg_css = f"""
+            background-color: #07090D;
+            background-image: {', '.join(bg_layers)};
+            background-position: {', '.join(bg_positions)};
+            background-size: {', '.join(bg_sizes)};
+            background-repeat: {', '.join(bg_repeats)};
+            background-attachment: fixed;
+        """
+    else:
+        page_bg_css = f"""
+            background-color: #07090D;
+            background-image:
+                linear-gradient(180deg, rgba(7, 9, 13, 0.45) 0%, rgba(7, 9, 13, 0.75) 60%, #07090D 100%),
+                url('{hero_image}' if hero_image else ''),
+                linear-gradient(135deg, #07090D 0%, #0D1117 100%);
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        """
+
     return dedent(
         f"""
         <style>
             :root {{
-                --f1-red: #e10600;
-                --f1-ink: #08090b;
-                --f1-panel: rgba(255, 255, 255, 0.72);
-                --f1-panel-strong: rgba(255, 255, 255, 0.88);
-                --f1-line: rgba(8, 9, 11, 0.16);
-                --f1-text: #101216;
-                --f1-muted: #606873;
-                --f1-soft: #f3f4f6;
-                --f1-shadow: rgba(10, 11, 13, 0.14);
+                --f1-red: #E10600;
+                --f1-bg: #07090D;
+                --f1-card-bg: rgba(13, 17, 24, 0.65);
+                --f1-card-hover: rgba(18, 24, 34, 0.85);
+                --f1-line: rgba(255, 255, 255, 0.12);
+                --f1-line-strong: rgba(255, 255, 255, 0.22);
+                --f1-text: #F0F4F8;
+                --f1-muted: #8E9BAE;
+                --f1-shadow: rgba(0, 0, 0, 0.55);
             }}
 
             html, body, [data-testid="stAppViewContainer"] {{
-                background-image:
-                    repeating-linear-gradient(90deg, rgba(8, 9, 11, 0.035) 0 1px, transparent 1px 14px),
-                    linear-gradient(180deg, transparent 0 50vh, rgba(242, 243, 245, 0.82) 72vh, #f2f3f5 100%),
-                    {page_background};
-                background-size: cover;
-                background-position: 34% top;
-                background-repeat: no-repeat;
-                background-attachment: fixed;
+                {page_bg_css}
                 color: var(--f1-text);
             }}
 
@@ -54,60 +134,28 @@ def homepage_css() -> str:
             }}
 
             [data-testid="collapsedControl"] button {{
-                background: transparent;
-                border: 0;
-                box-shadow: none;
+                background: rgba(12, 16, 24, 0.75);
+                border: 1px solid var(--f1-line);
+                border-radius: 6px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.4);
                 position: relative;
             }}
 
             [data-testid="collapsedControl"] button,
             [data-testid="collapsedControl"] button *,
             [data-testid="collapsedControl"] button svg,
-            [data-testid="collapsedControl"] button svg *,
             [data-testid="collapsedControl"] button path {{
-                color: #08090b;
-                fill: #08090b;
-                stroke: #08090b;
+                color: #FFFFFF;
+                fill: #FFFFFF;
+                stroke: #FFFFFF;
                 opacity: 1;
-            }}
-
-            [data-testid="collapsedControl"] button svg {{
-                opacity: 0;
-            }}
-
-            [data-testid="collapsedControl"] button::after {{
-                content: ">>";
-                position: absolute;
-                inset: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #08090b;
-                font-size: 1.35rem;
-                font-weight: 950;
-                line-height: 1;
-                opacity: 1;
-                pointer-events: none;
-            }}
-
-            [data-testid="collapsedControl"] button:hover {{
-                background: transparent;
-            }}
-
-            [data-testid="collapsedControl"] button:hover,
-            [data-testid="collapsedControl"] button:hover *,
-            [data-testid="collapsedControl"] button:hover svg,
-            [data-testid="collapsedControl"] button:hover path {{
-                color: #08090b;
-                fill: #08090b;
-                stroke: #08090b;
             }}
 
             [data-testid="stSidebar"] {{
-                background: rgba(255, 255, 255, 0.94);
-                border-right: 2px solid rgba(8, 9, 11, 0.22);
-                box-shadow: 24px 0 70px rgba(8, 9, 11, 0.16);
-                backdrop-filter: blur(26px);
+                background: rgba(9, 12, 18, 0.94);
+                border-right: 1px solid var(--f1-line-strong);
+                box-shadow: 20px 0 60px rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(28px);
             }}
 
             [data-testid="stSidebar"]::before {{
@@ -115,8 +163,8 @@ def homepage_css() -> str:
                 position: absolute;
                 inset: 0;
                 background:
-                    linear-gradient(90deg, rgba(225, 6, 0, 0.16), transparent 13%),
-                    repeating-linear-gradient(135deg, rgba(8, 9, 11, 0.052) 0 1px, transparent 1px 11px);
+                    linear-gradient(90deg, rgba(225, 6, 0, 0.12), transparent 15%),
+                    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 12px);
                 pointer-events: none;
             }}
 
@@ -128,30 +176,26 @@ def homepage_css() -> str:
             [data-testid="stSidebar"] h3,
             [data-testid="stSidebar"] p,
             [data-testid="stSidebar"] label {{
-                color: #08090b;
+                color: #FFFFFF;
                 opacity: 1;
             }}
 
             .block-container {{
-                max-width: 1500px;
+                max-width: 1540px;
                 padding-top: 0;
                 padding-bottom: 4rem;
             }}
 
-            h1, h2, h3, p {{
-                letter-spacing: 0;
-            }}
-
-            h2, h3, h4, [data-testid="stMarkdownContainer"] p {{
+            h1, h2, h3, h4, [data-testid="stMarkdownContainer"] p {{
                 color: var(--f1-text);
             }}
 
+            /* --- FLOATING CINEMATIC HERO --- */
             .nfs-hero {{
-                min-height: 60vh;
+                min-height: 48vh;
                 border: 0;
-                border-radius: 0;
                 background: transparent;
-                padding: clamp(1.4rem, 4vw, 3.2rem);
+                padding: clamp(1.5rem, 3.5vw, 3rem);
                 display: flex;
                 align-items: flex-end;
                 box-shadow: none;
@@ -159,72 +203,73 @@ def homepage_css() -> str:
                 margin-inline: calc(-1 * clamp(0rem, 2vw, 1.8rem));
             }}
 
-            .nfs-hero::after {{
-                display: none;
-            }}
-
             .nfs-hero-content {{
                 position: relative;
-                z-index: 1;
-                max-width: 570px;
+                z-index: 2;
+                max-width: 580px;
                 margin-left: auto;
-                padding: 1.1rem 1.25rem 1.25rem;
-                background: rgba(255, 255, 255, 0.62);
-                border: 1px solid rgba(8, 9, 11, 0.14);
-                border-radius: 8px;
-                backdrop-filter: blur(14px);
-                box-shadow: 0 22px 70px rgba(8, 9, 11, 0.12);
+                padding: 1.25rem 1.4rem;
+                background: rgba(10, 14, 20, 0.68);
+                border: 1px solid var(--f1-line);
+                border-radius: 10px;
+                backdrop-filter: blur(20px);
+                box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
             }}
 
             .nfs-kicker {{
                 display: inline-flex;
                 align-items: center;
                 gap: 0.45rem;
-                padding: 0.34rem 0.62rem;
-                border: 1px solid rgba(8, 9, 11, 0.26);
-                background: rgba(255, 255, 255, 0.88);
-                color: var(--f1-red);
-                font-size: 0.78rem;
+                padding: 0.32rem 0.65rem;
+                border: 1px solid rgba(225, 6, 0, 0.4);
+                background: rgba(225, 6, 0, 0.15);
+                color: #FF4A4A;
+                font-size: 0.76rem;
                 font-weight: 900;
                 text-transform: uppercase;
-                backdrop-filter: blur(14px);
+                letter-spacing: 0.08em;
+                border-radius: 4px;
             }}
 
             .nfs-title {{
-                margin: 0.85rem 0 0.8rem;
-                color: var(--f1-ink);
-                font-size: clamp(2.35rem, 4.7vw, 4.55rem);
-                line-height: 0.86;
+                margin: 0.75rem 0 0.65rem;
+                color: #FFFFFF;
+                font-size: clamp(2.3rem, 4.5vw, 4.2rem);
+                line-height: 0.88;
                 font-weight: 950;
                 text-transform: uppercase;
-                text-shadow: 0 2px 0 rgba(255,255,255,0.55);
+                text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
             }}
 
             .nfs-copy {{
-                max-width: 640px;
-                color: #1a1d22;
-                font-size: clamp(0.96rem, 1.4vw, 1.16rem);
-                line-height: 1.65;
-                font-weight: 600;
+                max-width: 600px;
+                color: #C2CBD6;
+                font-size: clamp(0.94rem, 1.3vw, 1.08rem);
+                line-height: 1.6;
+                font-weight: 500;
             }}
 
+            /* --- FLOATING METRIC STRIP --- */
             .nfs-strip {{
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                gap: 0.65rem;
+                gap: 0.75rem;
                 margin: 0.8rem 0 1.2rem;
             }}
 
-            .nfs-chip, .nfs-card {{
+            .nfs-chip {{
                 border: 1px solid var(--f1-line);
-                background: rgba(255, 255, 255, 0.86);
+                background: rgba(12, 16, 24, 0.65);
                 border-radius: 8px;
-                backdrop-filter: blur(18px);
-                box-shadow: 0 18px 55px var(--f1-shadow);
+                backdrop-filter: blur(20px);
+                box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+                padding: 0.85rem 1rem;
+                transition: transform 0.2s ease, border-color 0.2s ease;
             }}
 
-            .nfs-chip {{
-                padding: 0.8rem;
+            .nfs-chip:hover {{
+                transform: translateY(-2px);
+                border-color: var(--f1-line-strong);
             }}
 
             .nfs-chip span {{
@@ -233,69 +278,40 @@ def homepage_css() -> str:
                 font-size: 0.72rem;
                 font-weight: 800;
                 text-transform: uppercase;
+                letter-spacing: 0.06em;
             }}
 
             .nfs-chip strong {{
                 display: block;
-                margin-top: 0.2rem;
-                color: var(--f1-text);
-                font-size: 1.05rem;
+                margin-top: 0.25rem;
+                color: #FFFFFF;
+                font-size: 1.12rem;
+                font-weight: 800;
             }}
 
-            .nfs-card {{
-                padding: 1rem;
-                min-height: 160px;
-            }}
-
-            .nfs-card-title {{
-                margin: 0;
-                color: var(--f1-text);
-                font-size: 1.05rem;
-                font-weight: 900;
-                text-transform: uppercase;
-            }}
-
-            .nfs-card-meta {{
-                margin-top: 0.42rem;
-                color: var(--f1-muted);
-                font-size: 0.9rem;
-                line-height: 1.5;
-            }}
-
-            .nfs-driver {{
-                border-left: 5px solid var(--accent, var(--f1-red));
-            }}
-
-            .nfs-vs {{
-                display: flex;
-                min-height: 160px;
-                align-items: center;
-                justify-content: center;
-                color: var(--f1-red);
-                font-size: clamp(2rem, 4vw, 4rem);
-                font-weight: 950;
-                text-transform: uppercase;
-            }}
-
+            /* --- BUTTONS & CONTROLS --- */
             .stButton > button {{
-                min-height: 3rem;
-                border-radius: 4px;
-                border: 1px solid rgba(8, 9, 11, 0.24);
-                background: linear-gradient(90deg, #e10600, #ff2e2e);
-                color: #fff;
+                min-height: 3.1rem;
+                border-radius: 6px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: linear-gradient(90deg, #E10600, #FF2E2E);
+                color: #FFFFFF;
                 font-weight: 900;
                 text-transform: uppercase;
-                box-shadow: 0 12px 30px rgba(225, 6, 0, 0.22);
+                letter-spacing: 0.06em;
+                box-shadow: 0 12px 32px rgba(225, 6, 0, 0.4);
+                transition: transform 0.2s ease, filter 0.2s ease;
             }}
 
             .stButton > button *,
             .stButton > button p {{
-                color: #fff;
+                color: #FFFFFF !important;
             }}
 
             .stButton > button:hover {{
-                border-color: rgba(8, 9, 11, 0.34);
-                filter: brightness(1.02);
+                border-color: #FFFFFF;
+                filter: brightness(1.1);
+                transform: translateY(-2px);
             }}
 
             [data-testid="stSelectbox"] label {{
@@ -303,48 +319,223 @@ def homepage_css() -> str:
                 font-weight: 800;
                 text-transform: uppercase;
                 font-size: 0.76rem;
+                letter-spacing: 0.06em;
             }}
 
             [data-baseweb="select"] > div {{
-                background: rgba(255, 255, 255, 0.92);
-                border-color: rgba(8, 9, 11, 0.26);
-                color: var(--f1-text);
-                border-radius: 4px;
+                background: rgba(14, 18, 26, 0.85);
+                border-color: var(--f1-line);
+                color: #FFFFFF;
+                border-radius: 6px;
             }}
 
             [data-testid="stAlert"] {{
-                background: rgba(255, 255, 255, 0.76);
-                border: 1px solid rgba(8, 9, 11, 0.14);
-                color: var(--f1-text);
+                background: rgba(12, 16, 24, 0.80);
+                border: 1px solid var(--f1-line);
+                color: #FFFFFF;
+                backdrop-filter: blur(16px);
             }}
 
             [data-testid="stPlotlyChart"] {{
-                background: rgba(255, 255, 255, 0.94);
-                border: 1px solid rgba(8, 9, 11, 0.18);
-                border-radius: 8px;
-                padding: 0.75rem;
-                box-shadow: 0 18px 55px rgba(8, 9, 11, 0.12);
+                background: rgba(10, 14, 20, 0.72);
+                border: 1px solid var(--f1-line);
+                border-radius: 10px;
+                padding: 0.85rem;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(20px);
             }}
 
-            [data-testid="stPlotlyChart"] svg text {{
-                fill: #08090b;
+            /* --- FLOATING CINEMATIC MATCHUP HUD --- */
+            @keyframes hudSlideLeft {{
+                0% {{ opacity: 0; transform: translateX(-35px); }}
+                100% {{ opacity: 1; transform: translateX(0); }}
             }}
 
-            @media (max-width: 900px) {{
-                .nfs-strip {{
-                    grid-template-columns: repeat(2, minmax(0, 1fr));
+            @keyframes hudSlideRight {{
+                0% {{ opacity: 0; transform: translateX(35px); }}
+                100% {{ opacity: 1; transform: translateX(0); }}
+            }}
+
+            @keyframes vsGlowPulse {{
+                0% {{
+                    text-shadow: 0 0 12px rgba(225, 6, 0, 0.4), 0 0 24px rgba(255, 255, 255, 0.2);
+                    transform: scale(0.96);
                 }}
-                .nfs-hero {{
-                    min-height: 54vh;
+                100% {{
+                    text-shadow: 0 0 24px rgba(225, 6, 0, 0.9), 0 0 40px rgba(255, 255, 255, 0.6);
+                    transform: scale(1.05);
                 }}
+            }}
+
+            .f1-cinematic-hud {{
+                display: grid;
+                grid-template-columns: minmax(290px, 1fr) 80px minmax(290px, 1fr) minmax(220px, 0.85fr);
+                gap: 1rem;
+                align-items: stretch;
+                margin: 1rem 0 1.5rem;
+            }}
+
+            @media (max-width: 1100px) {{
+                .f1-cinematic-hud {{
+                    grid-template-columns: 1fr;
+                }}
+            }}
+
+            .f1-hud-panel {{
+                position: relative;
+                background: rgba(10, 14, 22, 0.68);
+                border: 1px solid var(--f1-line);
+                border-radius: 12px;
+                padding: 1.25rem 1.4rem;
+                backdrop-filter: blur(24px);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            }}
+
+            .f1-hud-panel:hover {{
+                transform: translateY(-3px);
+                border-color: var(--f1-line-strong);
+                box-shadow: 0 26px 70px var(--accent-glow, rgba(0, 0, 0, 0.7));
+            }}
+
+            .f1-hud-panel.target-hud {{
+                border-left: 5px solid var(--accent, #E10600);
+                animation: hudSlideLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+            }}
+
+            .f1-hud-panel.attacker-hud {{
+                border-right: 5px solid var(--accent, #27F4D2);
+                animation: hudSlideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+            }}
+
+            .f1-hud-top {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.65rem;
+            }}
+
+            .f1-hud-badge {{
+                font-size: 0.70rem;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                padding: 0.28rem 0.6rem;
+                border-radius: 4px;
+                color: #FFFFFF;
+                background: var(--accent, #E10600);
+                box-shadow: 0 4px 14px var(--accent-glow, rgba(225, 6, 0, 0.4));
+            }}
+
+            .f1-hud-number {{
+                font-size: 1.85rem;
+                font-weight: 950;
+                font-style: italic;
+                color: #FFFFFF;
+                opacity: 0.92;
+                line-height: 1;
+            }}
+
+            .f1-hud-body {{
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin: 0.4rem 0;
+            }}
+
+            .f1-hud-avatar {{
+                width: 68px;
+                height: 68px;
+                min-width: 68px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 2.5px solid var(--accent, #E10600);
+                box-shadow: 0 0 20px var(--accent-glow, rgba(225, 6, 0, 0.35));
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #10141C, #1E2532);
+            }}
+
+            .f1-hud-avatar img {{
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                object-position: top center;
+            }}
+
+            .f1-hud-monogram {{
+                font-size: 1.35rem;
+                font-weight: 950;
+                letter-spacing: 0.05em;
+                color: #FFFFFF;
+                text-shadow: 0 0 10px var(--accent, #E10600);
+            }}
+
+            .f1-hud-name {{
+                font-size: 1.35rem;
+                font-weight: 950;
+                text-transform: uppercase;
+                color: #FFFFFF;
+                line-height: 1.1;
+                margin: 0.1rem 0;
+                letter-spacing: 0.02em;
+            }}
+
+            .f1-hud-team {{
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--f1-muted);
+            }}
+
+            .f1-hud-footer {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 0.65rem;
+                padding-top: 0.55rem;
+                border-top: 1px solid var(--f1-line);
+                font-size: 0.76rem;
+                color: var(--f1-muted);
+                font-weight: 700;
+            }}
+
+            .f1-hud-vs {{
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 130px;
+                user-select: none;
+            }}
+
+            .f1-hud-vs-title {{
+                font-size: 2.2rem;
+                font-weight: 950;
+                font-style: italic;
+                letter-spacing: 0.08em;
+                color: #FFFFFF;
+                line-height: 1;
+                margin: 0.2rem 0;
+                animation: vsGlowPulse 2.2s ease-in-out infinite alternate;
+            }}
+
+            .f1-hud-vs-slash {{
+                font-size: 1rem;
+                font-weight: 950;
+                letter-spacing: 0.16em;
+                color: var(--f1-red, #E10600);
             }}
         </style>
         """
     )
 
 
-def apply_homepage_theme() -> None:
-    st.markdown(homepage_css(), unsafe_allow_html=True)
+def apply_homepage_theme(driver_a: str | None = None, driver_b: str | None = None) -> None:
+    st.markdown(homepage_css(driver_a, driver_b), unsafe_allow_html=True)
 
 
 def render_homepage_hero() -> None:
@@ -386,12 +577,12 @@ def render_event_strip(season: int, race: str, driver_a: str | None, driver_b: s
     )
 
 
-def _driver_card(code: str | None, label: str) -> str:
+def _driver_card(code: str | None, label: str, role_type: str = "target") -> str:
     if not code:
         return (
-            '<div class="nfs-card nfs-driver">'
-            f'<h3 class="nfs-card-title">{escape(label)}</h3>'
-            '<div class="nfs-card-meta">Select a driver after race data is loaded.</div>'
+            f'<div class="f1-hud-panel {role_type}-hud">'
+            f'<div class="f1-hud-top"><span class="f1-hud-badge">{escape(label)}</span></div>'
+            '<div class="f1-hud-body"><div class="f1-hud-team">Select a driver after telemetry loads.</div></div>'
             '</div>'
         )
 
@@ -400,39 +591,87 @@ def _driver_card(code: str | None, label: str) -> str:
     team = profile["team"]
     car = profile["car"]
     accent = team.get("accentColor", "#E10600")
-    number = f"#{driver['number']}" if driver.get("number") else "No number"
-    photo_state = "Ready" if profile["driverPhotoPath"] else "Awaiting local file"
+    number = f"#{driver['number']}" if driver.get("number") else ""
+    country = driver.get("country", "")
+
+    # Resolve photo Data URI if available
+    photo_uri = None
+    if profile.get("driverPhotoPath"):
+        try:
+            rel = str(Path(profile["driverPhotoPath"]).relative_to(PROJECT_ROOT)).replace("\\", "/")
+            photo_uri = image_data_uri(rel)
+        except Exception:
+            photo_uri = None
+
+    if not photo_uri:
+        photo_uri = image_data_uri(f"assets/drivers/{code.upper()}.png")
+
+    if photo_uri:
+        avatar_html = f'<img src="{photo_uri}" alt="{escape(code)}" />'
+    else:
+        avatar_html = f'<span class="f1-hud-monogram">{escape(code[:3].upper())}</span>'
+
+    role_badge_label = "ATTACKER // TARGET" if role_type == "target" else "DEFENDER // CHASER"
+
     return (
-        f'<div class="nfs-card nfs-driver" style="--accent: {escape(accent)};">'
-        f'<h3 class="nfs-card-title">{escape(label)} / {escape(driver.get("code", code))}</h3>'
-        '<div class="nfs-card-meta">'
-        f'<strong>{escape(driver.get("name", code))}</strong><br>'
-        f'{escape(number)} / {escape(team.get("name", "Unknown Team"))}<br>'
-        f'Car: {escape(car.get("name", "Unknown Car"))}<br>'
-        f'Photo: {photo_state}'
-        '</div>'
-        '</div>'
+        f'<div class="f1-hud-panel {role_type}-hud" style="--accent: {escape(accent)}; --accent-glow: {escape(accent)}44;">'
+        f'  <div class="f1-hud-top">'
+        f'    <span class="f1-hud-badge">{escape(role_badge_label)}</span>'
+        f'    <span class="f1-hud-number">{escape(number)}</span>'
+        f'  </div>'
+        f'  <div class="f1-hud-body">'
+        f'    <div class="f1-hud-avatar">{avatar_html}</div>'
+        f'    <div>'
+        f'      <div class="f1-hud-name">{escape(driver.get("name", code))}</div>'
+        f'      <div class="f1-hud-team">{escape(team.get("name", "Unknown Team"))}</div>'
+        f'    </div>'
+        f'  </div>'
+        f'  <div class="f1-hud-footer">'
+        f'    <span>🏎️ {escape(car.get("name", "F1 Car"))}</span>'
+        f'    <span>📍 {escape(country)}</span>'
+        f'  </div>'
+        f'</div>'
     )
 
 
 def render_matchup_preview(driver_a: str | None, driver_b: str | None, race: str) -> None:
+    profile_a = driver_profile(driver_a) if driver_a else None
+    profile_b = driver_profile(driver_b) if driver_b else None
+
+    accent_a = profile_a["team"].get("accentColor", "#3671C6") if profile_a else "#3671C6"
+    accent_b = profile_b["team"].get("accentColor", "#27F4D2") if profile_b else "#27F4D2"
+
     track = get_track(race)
-    track_body = (
-        f"{track['circuit']} · {track['country']}<br>{track['laps']} laps · {track['lengthKm']} km"
-        if track
-        else "Metadata fallback active. Add this circuit to data/tracks.json for richer context."
-    )
+    track_circuit = track["circuit"] if track else race
+    track_country = track.get("country", "Grand Prix") if track else "F1 Circuit"
+    track_laps = f"{track['laps']} Laps" if track and track.get("laps") else "Race Distance"
+    track_len = f"{track['lengthKm']} km" if track and track.get("lengthKm") else ""
+
     st.markdown(
         (
-            '<div class="nfs-strip" style="grid-template-columns: 1fr 0.35fr 1fr 1fr;">'
-            f'{_driver_card(driver_a, "Target")}'
-            '<div class="nfs-card nfs-vs">VS</div>'
-            f'{_driver_card(driver_b, "Attacker")}'
-            '<div class="nfs-card">'
-            '<h3 class="nfs-card-title">Track Preview</h3>'
-            f'<div class="nfs-card-meta">{track_body}</div>'
-            '</div>'
+            '<div class="f1-cinematic-hud">'
+            f'{_driver_card(driver_a, "Attacker", "target")}'
+            '  <div class="f1-hud-vs">'
+            '    <span class="f1-hud-vs-slash">//</span>'
+            '    <span class="f1-hud-vs-title">VS</span>'
+            '    <span class="f1-hud-vs-slash">//</span>'
+            '  </div>'
+            f'{_driver_card(driver_b, "Defender", "attacker")}'
+            '  <div class="f1-hud-panel">'
+            '    <div class="f1-hud-top">'
+            '      <span class="f1-hud-badge" style="background: rgba(255,255,255,0.12); box-shadow: none;">CIRCUIT PROFILE</span>'
+            '    </div>'
+            '    <div class="f1-hud-body" style="flex-direction: column; align-items: flex-start; gap: 0.25rem;">'
+            f'      <div class="f1-hud-name" style="font-size: 1.15rem;">{escape(track_circuit)}</div>'
+            f'      <div class="f1-hud-team">{escape(track_country)}</div>'
+            '    </div>'
+            '    <div class="f1-hud-footer">'
+            f'      <span>🏁 {escape(track_laps)}</span>'
+            f'      <span>📏 {escape(track_len)}</span>'
+            '    </div>'
+            '  </div>'
             '</div>'
         ),
         unsafe_allow_html=True,
     )
+

@@ -1,13 +1,13 @@
-"""Plotly styling helpers for the redesigned UI."""
+"""Plotly styling helpers for the redesigned cinematic UI."""
 
 from __future__ import annotations
 
 import plotly.graph_objects as go
 
-LIGHT_CHART_LAYOUT = {
-    "paper_bgcolor": "rgba(255,255,255,0)",
-    "plot_bgcolor": "#F9FAFB",
-    "font": {"family": "Inter, Segoe UI, sans-serif", "color": "#08090B", "size": 14},
+DARK_CHART_LAYOUT = {
+    "paper_bgcolor": "rgba(10, 12, 16, 0.70)",
+    "plot_bgcolor": "rgba(16, 20, 28, 0.50)",
+    "font": {"family": "Inter, Segoe UI, sans-serif", "color": "#F0F4F8", "size": 14},
     "margin": {"l": 72, "r": 34, "t": 78, "b": 64},
     "legend": {
         "orientation": "h",
@@ -15,37 +15,37 @@ LIGHT_CHART_LAYOUT = {
         "y": 1.06,
         "xanchor": "left",
         "x": 0,
-        "font": {"color": "#08090B", "size": 12},
-        "bgcolor": "rgba(255,255,255,0.94)",
-        "bordercolor": "rgba(8,9,11,0.18)",
+        "font": {"color": "#FFFFFF", "size": 12},
+        "bgcolor": "rgba(12, 15, 20, 0.85)",
+        "bordercolor": "rgba(255, 255, 255, 0.15)",
         "borderwidth": 1,
         "itemsizing": "constant",
         "title": {"text": ""},
     },
     "xaxis": {
-        "gridcolor": "rgba(8,9,11,0.16)",
-        "zerolinecolor": "rgba(8,9,11,0.36)",
-        "linecolor": "rgba(8,9,11,0.55)",
-        "tickfont": {"color": "#08090B", "size": 12},
-        "title": {"font": {"color": "#08090B", "size": 14}},
+        "gridcolor": "rgba(255, 255, 255, 0.08)",
+        "zerolinecolor": "rgba(255, 255, 255, 0.22)",
+        "linecolor": "rgba(255, 255, 255, 0.35)",
+        "tickfont": {"color": "#D0D8E0", "size": 12},
+        "title": {"font": {"color": "#FFFFFF", "size": 14}},
         "showline": True,
-        "linewidth": 2,
+        "linewidth": 1.5,
         "ticks": "outside",
-        "ticklen": 7,
+        "ticklen": 6,
     },
     "yaxis": {
-        "gridcolor": "rgba(8,9,11,0.16)",
-        "zerolinecolor": "rgba(8,9,11,0.36)",
-        "linecolor": "rgba(8,9,11,0.55)",
-        "tickfont": {"color": "#08090B", "size": 12},
-        "title": {"font": {"color": "#08090B", "size": 14}},
+        "gridcolor": "rgba(255, 255, 255, 0.08)",
+        "zerolinecolor": "rgba(255, 255, 255, 0.22)",
+        "linecolor": "rgba(255, 255, 255, 0.35)",
+        "tickfont": {"color": "#D0D8E0", "size": 12},
+        "title": {"font": {"color": "#FFFFFF", "size": 14}},
         "showline": True,
-        "linewidth": 2,
+        "linewidth": 1.5,
         "ticks": "outside",
-        "ticklen": 7,
+        "ticklen": 6,
     },
     "hoverlabel": {
-        "bgcolor": "#08090B",
+        "bgcolor": "#08090C",
         "font": {"color": "#FFFFFF", "family": "Inter, Segoe UI, sans-serif"},
         "bordercolor": "#E10600",
     },
@@ -53,11 +53,11 @@ LIGHT_CHART_LAYOUT = {
 
 
 def style_chart(fig: go.Figure, title: str | None = None) -> go.Figure:
-    """Apply shared chart styling without changing the analytical data."""
-    fig.update_layout(template="plotly_white")
-    fig.update_layout(**LIGHT_CHART_LAYOUT)
+    """Apply shared dark motorsport chart styling without changing the analytical data."""
+    fig.update_layout(template="plotly_dark")
+    fig.update_layout(**DARK_CHART_LAYOUT)
     if title:
-        fig.update_layout(title={"text": title, "font": {"size": 20, "color": "#08090B"}})
+        fig.update_layout(title={"text": title, "font": {"size": 20, "color": "#FFFFFF"}})
     fig.update_xaxes(showline=True, mirror=False)
     fig.update_yaxes(showline=True, mirror=False)
     return fig

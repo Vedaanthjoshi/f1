@@ -51,7 +51,7 @@ def train_global():
             random_state=42
         )
         model.fit(X_train, y_train)
-        print("✅ Successfully trained on GPU!")
+        print("[SUCCESS] Successfully trained on GPU!")
     except Exception as e:
         print(f"GPU training failed (falling back to CPU): {e}")
         model = xgb.XGBRegressor(
@@ -63,7 +63,7 @@ def train_global():
             random_state=42
         )
         model.fit(X_train, y_train)
-        print("✅ Successfully trained on CPU!")
+        print("[SUCCESS] Successfully trained on CPU!")
         
     # Evaluate score on test set (R^2 Score)
     score = model.score(X_test, y_test)
@@ -83,7 +83,7 @@ def train_global():
         'model': model,
         'features': features
     }, model_path)
-    print(f"\n💾 Model successfully saved to {model_path}")
+    print(f"\n[SAVED] Model successfully saved to {model_path}")
 
 if __name__ == "__main__":
     train_global()

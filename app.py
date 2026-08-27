@@ -187,20 +187,6 @@ def render_race_setup(season, races, race):
             "The race engine will prepare real telemetry data and leverage the pre-trained Global AI Model to simulate undercut strategies."
         )
 
-    active_year = st.session_state.get("year", season)
-    active_race = st.session_state.get("race", race)
-    render_event_strip(
-        active_year,
-        active_race,
-        st.session_state.get("driver_a"),
-        st.session_state.get("driver_b"),
-    )
-    render_matchup_preview(
-        st.session_state.get("driver_a"),
-        st.session_state.get("driver_b"),
-        active_race,
-    )
-
 
 def render_strategy_dashboard():
     model, features = load_global_model()
@@ -248,10 +234,10 @@ def render_strategy_dashboard():
     color_map = {"SOFT": "#FF3333", "MEDIUM": "#FFE800", "HARD": "#E0E0E0"}
     driver_color_map = {
         driver_a: driver_profile(driver_a)["team"].get("accentColor", "#E10600"),
-        driver_b: driver_profile(driver_b)["team"].get("accentColor", "#08090B"),
+        driver_b: driver_profile(driver_b)["team"].get("accentColor", "#27F4D2"),
     }
     if driver_color_map[driver_a] == driver_color_map[driver_b]:
-        driver_color_map[driver_b] = "#08090B"
+        driver_color_map[driver_b] = "#FFFFFF"
 
     fig1 = px.scatter(
         df_ab,
@@ -262,7 +248,7 @@ def render_strategy_dashboard():
         color_discrete_map=driver_color_map,
         hover_data=["tyre_age"],
         title=f"Actual Lap Times: {driver_a} vs {driver_b}",
-        template="plotly_white",
+        template="plotly_dark",
         labels={
             "LapNumber": "Race Lap",
             "LapTime_s": "Lap Time (seconds, lower is faster)",
@@ -272,7 +258,7 @@ def render_strategy_dashboard():
     )
     fig1.update_yaxes(autorange="reversed")  # In racing, shorter time is better (higher up)
     fig1.update_traces(
-        marker=dict(size=8, opacity=0.9, line=dict(width=1.1, color="#08090B")),
+        marker=dict(size=8, opacity=0.9, line=dict(width=1.1, color="#FFFFFF")),
         selector=dict(mode="markers"),
     )
     fig1.update_layout(legend_title_text="")
@@ -294,10 +280,10 @@ def render_strategy_dashboard():
             mode="lines+markers",
             name=f"{driver_a} gap to {driver_b}",
             line=dict(color=driver_color_map[driver_a], width=4),
-            marker=dict(size=6, color=driver_color_map[driver_a], line=dict(color="#08090B", width=1)),
+            marker=dict(size=6, color=driver_color_map[driver_a], line=dict(color="#FFFFFF", width=1)),
         )
     )
-    fig2.add_hline(y=0, line_dash="dot", line_color="#101216")
+    fig2.add_hline(y=0, line_dash="dot", line_color="rgba(255, 255, 255, 0.4)")
     fig2.update_layout(
         title=f"Time Gap ({driver_a} behind {driver_b})",
         xaxis_title="Race Lap",
@@ -368,7 +354,7 @@ def render_strategy_dashboard():
     )
     
     # Add zero-line to show where the advantage becomes positive
-    fig3.add_hline(y=0, line_dash="solid", line_color="#08090B", opacity=0.3)
+    fig3.add_hline(y=0, line_dash="solid", line_color="rgba(255, 255, 255, 0.4)")
 
     if sim_result["crossover_lap"]:
         fig3.add_vline(
@@ -394,7 +380,7 @@ def render_strategy_dashboard():
         st.error("Window is firmly closed. Staying out is faster for the foreseeable horizon.")
 
 
-apply_homepage_theme()
+apply_homepage_theme(st.session_state.get("driver_a"), st.session_state.get("driver_b"))
 render_homepage_hero()
 
 default_season = 2023

@@ -107,6 +107,91 @@ def resolve_asset(configured_path: str | None) -> Path | None:
     return candidate if candidate.exists() else None
 
 
+def resolve_driver_photo(code: str, configured_path: str | None = None) -> Path | None:
+    """Find driver photo across supported image extensions."""
+    if configured_path:
+        p = resolve_asset(configured_path)
+        if p and p.exists():
+            return p
+        # Check if configured path exists with a different common extension
+        base_name = Path(configured_path).stem
+        parent_dir = Path(configured_path).parent
+        for ext in [".jpg", ".jpeg", ".png", ".webp", ".JPG", ".JPEG", ".PNG", ".WEBP"]:
+            candidate = (PROJECT_ROOT / parent_dir / f"{base_name}{ext}").resolve()
+            if candidate.exists():
+                return candidate
+
+    # Try driver code directly in assets/drivers/
+    normalized_code = code.upper()
+    for ext in [".jpg", ".jpeg", ".png", ".webp", ".JPG", ".JPEG", ".PNG", ".WEBP"]:
+        candidate = (ASSETS_DIR / "drivers" / f"{normalized_code}{ext}").resolve()
+        if candidate.exists():
+            return candidate
+
+    return None
+
+
+def resolve_car_image(
+    driver_code: str | None = None,
+    car_id: str | None = None,
+    team_name: str | None = None,
+    configured_path: str | None = None,
+) -> Path | None:
+    """Find car image across supported image extensions, car ID, team name, or driver code."""
+    candidates_to_try: list[str] = []
+    if configured_path:
+        candidates_to_try.append(configured_path)
+    if car_id:
+        candidates_to_try.append(f"assets/cars/{car_id}")
+    if team_name:
+        candidates_to_try.extend([
+            f"assets/cars/{team_name}",
+            f"assets/cars/{team_name.replace(' ', '')}",
+            f"assets/cars/{team_name.replace(' ', '_')}",
+            f"assets/cars/{team_name.replace(' Racing', '')}",
+            f"assets/cars/{team_name.replace(' Racing', '').replace(' ', '')}",
+            f"assets/cars/{team_name.replace('Kick ', '')}",
+            f"assets/cars/{team_name.replace('Kick ', '').replace(' ', '')}",
+            f"assets/cars/{team_name.lower().replace(' ', '')}",
+            f"assets/cars/{team_name.lower().replace(' ', '_')}",
+        ])
+    if driver_code:
+        candidates_to_try.extend([
+            f"assets/cars/{driver_code.upper()}",
+            f"assets/cars/{driver_code.lower()}",
+        ])
+
+    extensions = [".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP", ""]
+
+    for base in candidates_to_try:
+        for ext in extensions:
+            test_path = f"{base}{ext}" if not base.endswith(ext) else base
+            p = resolve_asset(test_path)
+            if p and p.exists():
+                return p
+
+    # Fallback scan directory case-insensitively
+    cars_dir = ASSETS_DIR / "cars"
+    if cars_dir.exists():
+        existing_files = list(cars_dir.iterdir())
+        match_keys = []
+        if team_name:
+            clean_team = "".join(c for c in team_name.lower() if c.isalnum())
+            match_keys.extend([clean_team, clean_team.replace("racing", ""), clean_team.replace("kick", "")])
+        if car_id:
+            match_keys.append("".join(c for c in car_id.lower() if c.isalnum()))
+        if driver_code:
+            match_keys.append(driver_code.lower())
+
+        for file_path in existing_files:
+            file_clean = "".join(c for c in file_path.stem.lower() if c.isalnum())
+            for key in match_keys:
+                if key and (key == file_clean or key in file_clean or file_clean in key):
+                    return file_path
+
+    return None
+
+
 def driver_profile(code: str) -> dict[str, Any]:
     """Return driver, team, car, and resolved asset paths with fallbacks."""
     driver = get_driver(code) or {
@@ -135,8 +220,8 @@ def driver_profile(code: str) -> dict[str, Any]:
         "driver": driver,
         "team": team,
         "car": car,
-        "driverPhotoPath": resolve_asset(driver.get("photo")),
-        "carImagePath": resolve_asset(car.get("image")),
+        "driverPhotoPath": resolve_driver_photo(code, driver.get("photo")),
+        "carImagePath": resolve_car_image(code, car.get("id"), team.get("name"), car.get("image")),
     }
 
 

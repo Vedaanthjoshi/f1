@@ -26,6 +26,48 @@
     "base": "Woking, United Kingdom",
     "accentColor": "#FF8000",
     "secondaryColor": "#47C7FC"
+  },
+  {
+    "name": "Aston Martin",
+    "shortName": "Aston Martin",
+    "base": "Silverstone, United Kingdom",
+    "accentColor": "#229971",
+    "secondaryColor": "#CEDC00"
+  },
+  {
+    "name": "Alpine",
+    "shortName": "Alpine",
+    "base": "Enstone, United Kingdom",
+    "accentColor": "#FF87BC",
+    "secondaryColor": "#0093CC"
+  },
+  {
+    "name": "Williams",
+    "shortName": "Williams",
+    "base": "Grove, United Kingdom",
+    "accentColor": "#64C4FF",
+    "secondaryColor": "#00247D"
+  },
+  {
+    "name": "RB",
+    "shortName": "RB",
+    "base": "Faenza, Italy",
+    "accentColor": "#6692FF",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Kick Sauber",
+    "shortName": "Sauber",
+    "base": "Hinwil, Switzerland",
+    "accentColor": "#52E252",
+    "secondaryColor": "#08090B"
+  },
+  {
+    "name": "Haas",
+    "shortName": "Haas",
+    "base": "Kannapolis, United States",
+    "accentColor": "#B6BABD",
+    "secondaryColor": "#E10600"
   }
 ]
 
