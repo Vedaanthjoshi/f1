@@ -50,39 +50,33 @@ def homepage_css(driver_a: str | None = None, driver_b: str | None = None) -> st
         bg_sizes.append("cover")
         bg_repeats.append("no-repeat")
 
-        # Layer 2: Center glowing vertical laser / clash divider
-        bg_layers.append("linear-gradient(112deg, transparent 49.3%, rgba(225, 6, 0, 0.35) 49.6%, rgba(255, 255, 255, 0.95) 50%, rgba(39, 244, 210, 0.35) 50.4%, transparent 50.7%)")
-        bg_positions.append("center top")
-        bg_sizes.append("cover")
-        bg_repeats.append("no-repeat")
-
-        # Layer 3: Left Car (Driver A) - large, prominent, unclipped
+        # Layer 2: Left Car (Driver A) - same large visual scale as the right car
         if car_a_uri:
             bg_layers.append(f"url('{car_a_uri}')")
             bg_positions.append("left 0% top 14vh")
             bg_sizes.append("50vw auto")
             bg_repeats.append("no-repeat")
 
-        # Layer 4: Right Car (Driver B) - large, prominent, unclipped
+        # Layer 3: Right Car (Driver B) - same large visual scale as the left car
         if car_b_uri:
             bg_layers.append(f"url('{car_b_uri}')")
             bg_positions.append("right 0% top 14vh")
             bg_sizes.append("50vw auto")
             bg_repeats.append("no-repeat")
 
-        # Layer 5: Left team ambient lighting & smoke glow
+        # Layer 4: Left team ambient lighting & smoke glow
         bg_layers.append(f"radial-gradient(circle at 16% 32%, {accent_a}50 0%, {accent_a}10 40%, transparent 65%)")
         bg_positions.append("center top")
         bg_sizes.append("cover")
         bg_repeats.append("no-repeat")
 
-        # Layer 6: Right team ambient lighting & smoke glow
+        # Layer 5: Right team ambient lighting & smoke glow
         bg_layers.append(f"radial-gradient(circle at 84% 32%, {accent_b}50 0%, {accent_b}10 40%, transparent 65%)")
         bg_positions.append("center top")
         bg_sizes.append("cover")
         bg_repeats.append("no-repeat")
 
-        # Layer 7: Deep obsidian dark base
+        # Layer 6: Deep obsidian dark base
         bg_layers.append("linear-gradient(135deg, #07090D 0%, #0D1117 100%)")
         bg_positions.append("center top")
         bg_sizes.append("cover")
