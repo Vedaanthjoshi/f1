@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+from functools import lru_cache
 from pathlib import Path
 
 from ui.metadata import PROJECT_ROOT
@@ -20,8 +21,9 @@ def asset_path(relative_path: str) -> Path:
     return (PROJECT_ROOT / relative_path).resolve()
 
 
+@lru_cache(maxsize=64)
 def image_data_uri(relative_path: str) -> str | None:
-    """Return a base64 data URI for a project-local image."""
+    """Return a base64 data URI for a project-local image. Result is cached in-process."""
     path = asset_path(relative_path)
     try:
         path.relative_to(PROJECT_ROOT)

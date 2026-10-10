@@ -192,6 +192,7 @@ def resolve_car_image(
     return None
 
 
+@lru_cache(maxsize=32)
 def driver_profile(code: str) -> dict[str, Any]:
     """Return driver, team, car, and resolved asset paths with fallbacks."""
     driver = get_driver(code) or {
