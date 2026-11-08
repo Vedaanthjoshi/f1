@@ -51,24 +51,48 @@ def train_global_model(
     print(f"Loading global dataset from {data_path}...")
     df = pd.read_csv(data_path)
 
-    # ── Fix 3: target is now absolute fuel_corrected_time, not delta ────────
+    # ── Fix 3 (corrected): target remains lap_time_delta (fuel-corrected
+    #    degradation above fresh-tyre baseline). baseline_pace is used ONLY to
+    #    compute the target — it is NOT a model input feature. This distinction
+    #    is critical: the reviewer concern was that baseline_pace appeared in
+    #    both the feature vector AND the target denominator simultaneously.
+    #    Keeping it as a target reference but removing it from features resolves
+    #    the leakage while preserving meaningful within-stint delta prediction.
     required_cols = [
         'Driver', 'Track', 'tyre_age', 'compound_encoded',
-        'track_evolution', 'TrackTemp', 'fuel_corrected_time'
+        'baseline_pace', 'track_evolution', 'TrackTemp', 'lap_time_delta',
+        'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
     ]
+    # Circuit physics columns may be missing from old CSV — fill with defaults
+    from pipeline.features import CIRCUIT_PHYSICS
+    for col in ['abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness']:
+        if col not in df.columns:
+            # Back-fill from Track name if available
+            default = CIRCUIT_PHYSICS['_default'][col]
+            if 'Track' in df.columns:
+                df[col] = df['Track'].map(
+                    lambda t, c=col: CIRCUIT_PHYSICS.get(t, CIRCUIT_PHYSICS['_default']).get(c, default)
+                )
+            else:
+                df[col] = default
+            print(f"  [INFO] '{col}' missing in CSV — derived from Track lookup.")
     df = df.dropna(subset=required_cols)
     print(f"Total clean rows for training: {len(df)}")
 
     df['Track']  = df['Track'].astype('category')
     df['Driver'] = df['Driver'].astype('category')
 
-    # baseline_pace intentionally excluded (Fix 3: target leakage removal)
+    # baseline_pace intentionally excluded from features (Fix 3).
+    # It is retained in the DataFrame only to compute within-stint delta metrics
+    # in the evaluation block below — the model never sees it as an input.
     features = [
         'tyre_age', 'compound_encoded',
         'track_evolution', 'TrackTemp',
         'Track', 'Driver',
+        # Fix 6: circuit physics features — allow cross-circuit generalisation
+        'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
     ]
-    target = 'fuel_corrected_time'   # Fix 3: absolute lap time, not delta
+    target = 'lap_time_delta'   # Fix 3: pure within-stint degradation delta
 
     X = df[features]
     y = df[target]
@@ -130,36 +154,37 @@ def train_global_model(
     # ── Evaluation ───────────────────────────────────────────────────────────
     model.set_params(device='cpu')
     preds = model.predict(X_test)
-    y_arr = y_test.to_numpy()
+    y_arr = y_test.to_numpy()   # shape (n,) — within-stint degradation deltas
 
     print("\n── Quantile Model Evaluation (race-wise GroupKFold holdout) ──")
     print(f"  Held-out circuits : {held_out_tracks}")
+    print(f"  Target            : {target}  (fuel-corrected delta above fresh-tyre baseline)")
 
     for i, tau in enumerate(quantile_alphas):
         q_pred = preds[:, i]
         errors = np.where(y_arr >= q_pred, tau * (y_arr - q_pred), (1 - tau) * (q_pred - y_arr))
         print(f"  p{int(tau*100):02d} pinball loss : {errors.mean():.4f} s")
 
-    # p50 classical regression metrics
+    # p50 classical regression metrics on within-stint delta
     p50_preds = preds[:, 1]
-    r2  = r2_score(y_arr, p50_preds)
-    mae = mean_absolute_error(y_arr, p50_preds)
+    r2   = r2_score(y_arr, p50_preds)
+    mae  = mean_absolute_error(y_arr, p50_preds)
     rmse = float(np.sqrt(mean_squared_error(y_arr, p50_preds)))
-    print(f"\n  p50  R²   : {r2:.4f}")
-    print(f"  p50  MAE  : {mae:.4f} s")
+    print(f"\n  p50  R²   : {r2:.4f}  (on within-stint delta — not inflated by circuit identity)")
+    print(f"  p50  MAE  : {mae:.4f} s  (reviewer concern 3 metric: error on degradation component)")
     print(f"  p50  RMSE : {rmse:.4f} s")
 
-    # Within-stint degradation component error (reviewer concern 3)
+    # Per-tyre-age breakdown (reviewer concern 4: does tyre_age actually drive errors?)
     test_df = df.iloc[test_idx].copy()
     test_df['p50_pred'] = p50_preds
-    # Join baseline_pace for delta computation (diagnostic only)
-    if 'baseline_pace' in test_df.columns:
-        test_df['delta_true'] = test_df['fuel_corrected_time'] - test_df['baseline_pace']
-        test_df['delta_pred'] = test_df['p50_pred']           - test_df['baseline_pace']
-        delta_mae  = mean_absolute_error(test_df['delta_true'], test_df['delta_pred'])
-        delta_rmse = float(np.sqrt(mean_squared_error(test_df['delta_true'], test_df['delta_pred'])))
-        print(f"\n  Degradation-delta MAE  : {delta_mae:.4f} s  (reviewer concern 3 metric)")
-        print(f"  Degradation-delta RMSE : {delta_rmse:.4f} s")
+    test_df['abs_err']  = (test_df['lap_time_delta'] - test_df['p50_pred']).abs()
+    if 'tyre_age' in test_df.columns:
+        print("\n  MAE by tyre age bucket:")
+        for bucket, label in [(range(1, 6), "Laps 1-5"), (range(6, 16), "Laps 6-15"),
+                               (range(16, 31), "Laps 16-30"), (range(31, 99), "Laps 31+")]:
+            subset = test_df[test_df['tyre_age'].isin(bucket)]
+            if len(subset):
+                print(f"    {label:12s}: MAE = {subset['abs_err'].mean():.4f} s  (n={len(subset):,})")
 
     coverage = float(((y_arr >= preds[:, 0]) & (y_arr <= preds[:, 2])).mean())
     print(f"\n  90% Interval Coverage : {coverage:.1%}")
@@ -176,7 +201,7 @@ def train_global_model(
         'model':           model,
         'features':        features,
         'quantile_alphas': quantile_alphas,
-        'model_version':   'phase3_no_leakage_groupkfold',
+        'model_version':   'phase3_delta_target_no_leakage_groupkfold',
         'target':          target,
         'held_out_tracks': held_out_tracks,
     }, output_path)

@@ -31,13 +31,23 @@ def _build_feature_batch(
     leakage removal).  The new model predicts fuel_corrected_time directly.
     """
     n = len(tyre_ages)
+    # Lookup circuit physics for the race (from current_state or CIRCUIT_PHYSICS table)
+    from pipeline.features import CIRCUIT_PHYSICS
+    track_name = current_state.get('Track', 'Unknown')
+    circuit = CIRCUIT_PHYSICS.get(track_name, CIRCUIT_PHYSICS['_default'])
+
     data: dict[str, Any] = {
-        'tyre_age':         tyre_ages,
-        'compound_encoded': np.full(n, compound_encoded, dtype=float),
-        'track_evolution':  evos,
-        'TrackTemp':        temps,
-        'Track':            [current_state.get('Track', 'Unknown')] * n,
-        'Driver':           [current_state.get('Driver', 'UNK')] * n,
+        'tyre_age':           tyre_ages,
+        'compound_encoded':   np.full(n, compound_encoded, dtype=float),
+        'track_evolution':    evos,
+        'TrackTemp':          temps,
+        'Track':              [track_name] * n,
+        'Driver':             [current_state.get('Driver', 'UNK')] * n,
+        # Circuit physics (Fix 6)
+        'abrasion_index':     np.full(n, circuit['abrasion_index'],     dtype=float),
+        'circuit_length_km':  np.full(n, circuit['circuit_length_km'],  dtype=float),
+        'num_corners':        np.full(n, circuit['num_corners'],         dtype=float),
+        'compound_hardness':  np.full(n, circuit['compound_hardness'],   dtype=float),
     }
     df = pd.DataFrame({col: data[col] for col in feature_cols if col in data})
     if 'Track' in df.columns:
@@ -85,9 +95,11 @@ def run_mc_simulation(
     if feature_cols is None:
         # Fix 3: baseline_pace removed — model now predicts absolute
         # fuel_corrected_time, so no leakage through baseline subtraction.
+        # Fix 6: circuit physics features added for cross-circuit generalisation.
         feature_cols = [
             'tyre_age', 'compound_encoded',
             'track_evolution', 'TrackTemp', 'Track', 'Driver',
+            'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
         ]
 
     sc_rate = get_circuit_sc_rate(race_name)
@@ -101,10 +113,13 @@ def run_mc_simulation(
     last_temp = list(temp_map.values())[-1] if temp_map else 30.0
 
     horizon_laps = [current_lap + n for n in range(horizon)]
-    evos = np.array([evo_map.get(l, last_evo) for l in horizon_laps])
-    temps = np.array([temp_map.get(l, last_temp) for l in horizon_laps])
-    # Note: fuel_corrections are NOT added here — the new model (Fix 3) predicts
-    # fuel_corrected_time directly, so fuel adjustment is implicit in its output.
+    evos   = np.array([evo_map.get(l, last_evo)  for l in horizon_laps])
+    temps  = np.array([temp_map.get(l, last_temp) for l in horizon_laps])
+    # Fuel correction per horizon lap: model predicts lap_time_delta (above baseline,
+    # fuel-corrected). To reconstruct raw lap time: baseline + delta + fuel_correction.
+    fuel_corrections = np.array([
+        np.maximum(110.0 - 1.7 * l, 2.0) * 0.03 for l in horizon_laps
+    ])
 
     # --- Stay-Out baseline (one model call -> sample n_rollouts trajectories) ---
     so_ages = np.array([current_state['tyre_age'] + n for n in range(horizon)])
@@ -112,14 +127,14 @@ def run_mc_simulation(
         so_ages, current_state['compound_encoded'],
         current_state, evos, temps, feature_cols
     )
-    # Fix 3: model now predicts fuel_corrected_time directly (absolute seconds).
-    # Previously: baseline_pace + delta_sample + fuel_correction.
-    # Now:        p50_pred is already the absolute corrected lap time — just add
-    #             stochastic noise sampled from the quantile uncertainty band.
+    # Stay-Out baseline: model predicts lap_time_delta (fuel-corrected degradation
+    # above fresh-tyre pace). Reconstruct absolute lap times for comparison:
+    #   raw_lap_time = baseline_pace + predicted_delta + fuel_correction(lap_n)
+    # fuel_corrections vary per lap number (less fuel = faster correction term).
     so_p5, so_p50, so_p95 = _predict_quantiles(model, so_df)
     so_std = np.maximum((so_p95 - so_p5) / (2 * 1.645), 1e-5)
     so_delta_samples = rng.normal(loc=so_p50, scale=so_std, size=(n_rollouts, horizon))
-    so_lap_times = so_delta_samples   # already absolute fuel_corrected_time
+    so_lap_times = current_state['baseline_pace'] + so_delta_samples + fuel_corrections
     so_total = so_lap_times.sum(axis=1)
 
     results: list[dict[str, Any]] = []
@@ -142,7 +157,7 @@ def run_mc_simulation(
                 'window_open':        False,
                 'sc_expected_gain_s': 0.0,
                 'cover_rate':         0.0,
-                'p50_lap_times':      so_p50.tolist(),   # absolute fuel_corrected_time
+                'p50_lap_times':      (current_state['baseline_pace'] + so_p50 + fuel_corrections).tolist(),
             })
             continue
 
@@ -160,8 +175,8 @@ def run_mc_simulation(
         pit_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-5)
 
         pit_delta_samples = rng.normal(loc=pit_p50, scale=pit_std, size=(n_rollouts, horizon))
-        # Fix 3: predictions are absolute fuel_corrected_time — no baseline addition.
-        pit_lap_times = pit_delta_samples
+        # Delta target: reconstruct absolute lap times for comparison.
+        pit_lap_times = current_state['baseline_pace'] + pit_delta_samples + fuel_corrections
 
         # Fix 5 — Out-lap tyre warmup penalty
         # The lap immediately after the pit stop (out-lap) incurs a ~1.5 s pace
@@ -225,7 +240,7 @@ def run_mc_simulation(
             'window_open':        window_open,
             'sc_expected_gain_s': sc_expected,
             'cover_rate':         cover_rate,
-            'p50_lap_times':      pit_p50.tolist(),   # absolute fuel_corrected_time
+            'p50_lap_times':      (current_state['baseline_pace'] + pit_p50 + fuel_corrections).tolist(),
         })
 
     # Sort: Stay Out always at index 0, remaining ranked by expected gain descending
