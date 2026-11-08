@@ -64,7 +64,10 @@ CIRCUIT_PHYSICS: dict[str, dict] = {
 }
 
 # Column names added to DataFrame (must stay consistent with trainer feature list)
-CIRCUIT_FEATURE_COLS = ['abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness']
+CIRCUIT_FEATURE_COLS = [
+    'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
+    'thermal_load', 'abrasion_load', 'corner_density', 'wear_cliff'
+]
 
 
 def _get_circuit_physics(track_name: str) -> dict:
@@ -158,6 +161,12 @@ def apply_feature_engineering(df: pd.DataFrame, track_name: str | None = None) -
     # These let the model generalise to unseen circuits by physical properties
     # rather than relying solely on the circuit name embedding.
     engineered = apply_circuit_features(engineered, track_name=track_name)
+
+    # ── 6. Physics Interactions & Non-linear Wear (14-Feature Suite) ────────
+    engineered['thermal_load'] = engineered['tyre_age'] * engineered['TrackTemp']
+    engineered['abrasion_load'] = engineered['tyre_age'] * engineered['abrasion_index']
+    engineered['corner_density'] = engineered['num_corners'] / engineered['circuit_length_km']
+    engineered['wear_cliff'] = (engineered['tyre_age'] / 15.0) ** 2.0
 
     return engineered
 

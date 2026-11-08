@@ -3,7 +3,10 @@ ml package — Machine Learning, Model Loading & Explainability
 """
 
 from ml.model_loader import load_global_model
-from ml.explainability import compute_shap_explanation
+try:
+    from ml.explainability import compute_shap_explanation
+except ImportError:
+    compute_shap_explanation = None
 from ml.trainer import train_global_model
 
 __all__ = [

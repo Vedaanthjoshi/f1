@@ -48,6 +48,11 @@ def _build_feature_batch(
         'circuit_length_km':  np.full(n, circuit['circuit_length_km'],  dtype=float),
         'num_corners':        np.full(n, circuit['num_corners'],         dtype=float),
         'compound_hardness':  np.full(n, circuit['compound_hardness'],   dtype=float),
+        # Physics interactions (14-feature suite)
+        'thermal_load':       tyre_ages * temps,
+        'abrasion_load':      tyre_ages * circuit['abrasion_index'],
+        'corner_density':     np.full(n, circuit['num_corners'] / circuit['circuit_length_km'], dtype=float),
+        'wear_cliff':         (tyre_ages / 15.0) ** 2.0,
     }
     df = pd.DataFrame({col: data[col] for col in feature_cols if col in data})
     if 'Track' in df.columns:

@@ -82,16 +82,25 @@ def train_global_model(
     df['Track']  = df['Track'].astype('category')
     df['Driver'] = df['Driver'].astype('category')
 
+    # ── 14-Feature Suite (Physics interactions & Non-linear wear) ─────────────
     # baseline_pace intentionally excluded from features (Fix 3).
-    # It is retained in the DataFrame only to compute within-stint delta metrics
-    # in the evaluation block below — the model never sees it as an input.
     features = [
         'tyre_age', 'compound_encoded',
         'track_evolution', 'TrackTemp',
         'Track', 'Driver',
-        # Fix 6: circuit physics features — allow cross-circuit generalisation
         'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
+        'thermal_load', 'abrasion_load', 'corner_density', 'wear_cliff'
     ]
+    
+    # Back-fill interaction features if not present in CSV
+    if 'thermal_load' not in df.columns:
+        df['thermal_load'] = df['tyre_age'] * df['TrackTemp']
+    if 'abrasion_load' not in df.columns:
+        df['abrasion_load'] = df['tyre_age'] * df['abrasion_index']
+    if 'corner_density' not in df.columns:
+        df['corner_density'] = df['num_corners'] / df['circuit_length_km']
+    if 'wear_cliff' not in df.columns:
+        df['wear_cliff'] = (df['tyre_age'] / 15.0) ** 2.0
     target = 'lap_time_delta'   # Fix 3: pure within-stint degradation delta
 
     X = df[features]
