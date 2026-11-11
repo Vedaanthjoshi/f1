@@ -240,6 +240,8 @@ def simulate(req: SimulateRequest):
     target_compound_encoded = COMPOUND_MAP.get(req.next_compound.upper(), 3)
     horizon = 15
 
+    total_laps = int(driver_laps["LapNumber"].max()) if not driver_laps.empty else None
+
     # Run Monte Carlo rollouts across strategies
     mc_results = run_mc_simulation(
         model=model,
@@ -251,6 +253,7 @@ def simulate(req: SimulateRequest):
         n_rollouts=500,
         horizon=horizon,
         feature_cols=features,
+        total_laps=total_laps,
     )
 
     stay_out = mc_results[0]
@@ -323,3 +326,4 @@ if __name__ == "__main__":
     import uvicorn
     print("[API] Starting F1 Strategy Engine FastAPI Server on http://127.0.0.1:8000...")
     uvicorn.run(app, host="127.0.0.1", port=8000)
+

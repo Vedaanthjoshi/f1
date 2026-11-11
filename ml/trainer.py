@@ -2,33 +2,32 @@
 ml/trainer.py — Offline Global Quantile XGBoost Training Pipeline
 =================================================================
 Trains the multi-output quantile regression model (p05, p50, p95) on the
-historical laps dataset using asymmetric pinball loss.
+73,309 historical laps dataset using asymmetric pinball loss and the
+14-feature physics-informed suite.
 
 Reviewer-concern fixes applied
 --------------------------------
-Fix 3 : Removed 'baseline_pace' from the feature set.
-        Previously baseline_pace was both an input feature AND the
-        denominator of the regression target (lap_time_delta = fuel_corrected_time
-        - baseline_pace), causing direct target leakage.
-        New target: fuel_corrected_time (absolute, in seconds).
-        New features: tyre_age, compound_encoded, track_evolution,
-                      TrackTemp, Track, Driver.
-
-Fix 4 : Replaced random 80:20 train_test_split with race-wise GroupKFold
-        (k=5, grouped by Track) so that laps from the same Grand Prix can
-        NEVER appear in both the train and test sets simultaneously.
-        The held-out test set is the last cross-validation fold (a full set
-        of Grand Prix circuits not seen during training), giving a realistic
-        estimate of out-of-sample generalisation.
+Fix 1 : Fuel mass clamped >= 2 kg so corrections never go negative.
+Fix 2 : track_evolution uses strictly causal expanding median with lag-1.
+Fix 3 : baseline_pace completely excluded from features; target is lap_time_delta
+        computed by excluding Lap 1 standing starts.
+Fix 4 : Full 5-fold race-wise GroupKFold (grouped by Track) cross-validation
+        with mean +/- std reported across all folds.
+Fix 6 : 14-feature physics-informed suite with non-linear wear cliff, thermal load,
+        abrasion load, corner density, and physical Pirelli C-hardness.
 """
 
+from __future__ import annotations
 import os
 import pandas as pd
 import numpy as np
 import xgboost as xgb
 import joblib
-from sklearn.model_selection import GroupKFold  # Fix 4: race-wise split
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.model_selection import GroupKFold
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error
+
+from pipeline.features import FEATURE_COLS_14, apply_feature_engineering
+from pipeline.baseline import prepare_ml_data
 
 
 def train_global_model(
@@ -36,11 +35,7 @@ def train_global_model(
     output_path: str = os.path.join("models", "global_degradation_model.joblib"),
     quantile_alphas: list[float] | None = None,
 ) -> xgb.XGBRegressor | None:
-    """Train the global multi-output quantile XGBoost degradation model.
-
-    Evaluation uses race-wise GroupKFold (grouped by Track) to prevent
-    laps from the same Grand Prix appearing in both train and test sets.
-    """
+    """Train the global multi-output quantile XGBoost degradation model."""
     if quantile_alphas is None:
         quantile_alphas = [0.05, 0.50, 0.95]
 
@@ -51,170 +46,154 @@ def train_global_model(
     print(f"Loading global dataset from {data_path}...")
     df = pd.read_csv(data_path)
 
-    # ── Fix 3 (corrected): target remains lap_time_delta (fuel-corrected
-    #    degradation above fresh-tyre baseline). baseline_pace is used ONLY to
-    #    compute the target — it is NOT a model input feature. This distinction
-    #    is critical: the reviewer concern was that baseline_pace appeared in
-    #    both the feature vector AND the target denominator simultaneously.
-    #    Keeping it as a target reference but removing it from features resolves
-    #    the leakage while preserving meaningful within-stint delta prediction.
-    required_cols = [
-        'Driver', 'Track', 'tyre_age', 'compound_encoded',
-        'baseline_pace', 'track_evolution', 'TrackTemp', 'lap_time_delta',
-        'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
-    ]
-    # Circuit physics columns may be missing from old CSV — fill with defaults
-    from pipeline.features import CIRCUIT_PHYSICS
-    for col in ['abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness']:
-        if col not in df.columns:
-            # Back-fill from Track name if available
-            default = CIRCUIT_PHYSICS['_default'][col]
-            if 'Track' in df.columns:
-                df[col] = df['Track'].map(
-                    lambda t, c=col: CIRCUIT_PHYSICS.get(t, CIRCUIT_PHYSICS['_default']).get(c, default)
-                )
-            else:
-                df[col] = default
-            print(f"  [INFO] '{col}' missing in CSV — derived from Track lookup.")
-    df = df.dropna(subset=required_cols)
-    print(f"Total clean rows for training: {len(df)}")
+    # Ensure all 14 features and clean baseline exist
+    missing_feats = [f for f in FEATURE_COLS_14 if f not in df.columns]
+    if missing_feats or 'lap_time_delta' not in df.columns:
+        print(f"Enriching dataset with 14 features (missing: {missing_feats})...")
+        df = apply_feature_engineering(df)
+        df = prepare_ml_data(df)
 
-    df['Track']  = df['Track'].astype('category')
-    df['Driver'] = df['Driver'].astype('category')
+    target = 'lap_time_delta'
+    features = FEATURE_COLS_14
 
-    # ── 14-Feature Suite (Physics interactions & Non-linear wear) ─────────────
-    # baseline_pace intentionally excluded from features (Fix 3).
-    features = [
-        'tyre_age', 'compound_encoded',
-        'track_evolution', 'TrackTemp',
-        'Track', 'Driver',
-        'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
-        'thermal_load', 'abrasion_load', 'corner_density', 'wear_cliff'
-    ]
-    
-    # Back-fill interaction features if not present in CSV
-    if 'thermal_load' not in df.columns:
-        df['thermal_load'] = df['tyre_age'] * df['TrackTemp']
-    if 'abrasion_load' not in df.columns:
-        df['abrasion_load'] = df['tyre_age'] * df['abrasion_index']
-    if 'corner_density' not in df.columns:
-        df['corner_density'] = df['num_corners'] / df['circuit_length_km']
-    if 'wear_cliff' not in df.columns:
-        df['wear_cliff'] = (df['tyre_age'] / 15.0) ** 2.0
-    target = 'lap_time_delta'   # Fix 3: pure within-stint degradation delta
+    clean_df = df.dropna(subset=features + [target, 'Track']).copy()
+    print(f"Total clean training rows: {len(clean_df):,}")
 
-    X = df[features]
-    y = df[target]
+    X = clean_df[features]
+    y = clean_df[target]
+    groups = clean_df['Track'].astype(str).values
 
-    # ── Fix 4: Race-wise GroupKFold split ────────────────────────────────────
-    # Groups are circuit names (Track column, pre-category-encoded).
-    # Last fold is held out as the test set — circuits unseen during training.
-    groups = df['Track'].astype(str).values
+    # ── Fix 4: Full 5-Fold Race-wise GroupKFold Cross-Validation ──────────────
+    print("\n" + "=" * 65)
+    print("RUNNING 5-FOLD RACE-WISE GROUP-KFOLD CROSS-VALIDATION")
+    print("=" * 65)
     gkf = GroupKFold(n_splits=5)
 
-    train_idx, test_idx = None, None
-    for tr, te in gkf.split(X, y, groups):
-        train_idx, test_idx = tr, te   # keep the last fold as test
+    cv_p50_mae: list[float] = []
+    cv_p50_rmse: list[float] = []
+    cv_coverage: list[float] = []
+    cv_pinball_05: list[float] = []
+    cv_pinball_50: list[float] = []
+    cv_pinball_95: list[float] = []
 
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    for fold, (train_idx, test_idx) in enumerate(gkf.split(X, y, groups), 1):
+        X_tr, y_tr = X.iloc[train_idx], y.iloc[train_idx]
+        X_te, y_te = X.iloc[test_idx], y.iloc[test_idx]
+        held_out_tracks = sorted(set(groups[test_idx]))
 
-    held_out_tracks = sorted(set(groups[test_idx]))
-    print(f"\n[GroupKFold] Test set circuits ({len(held_out_tracks)}): {held_out_tracks}")
-    print(f"  Train laps: {len(X_train):,}  |  Test laps: {len(X_test):,}")
-
-    # ── Train quantile model ─────────────────────────────────────────────────
-    print("\nTraining global XGBoost Quantile model...")
-    try:
-        model = xgb.XGBRegressor(
-            n_estimators=400,
-            max_depth=8,
+        fold_model = xgb.XGBRegressor(
+            n_estimators=300,
+            max_depth=6,
             learning_rate=0.05,
             min_child_weight=5,
             subsample=0.8,
             colsample_bytree=0.8,
             tree_method='hist',
-            device='cuda',
-            enable_categorical=True,
             objective='reg:quantileerror',
             quantile_alpha=quantile_alphas,
-            random_state=42,
+            random_state=42 + fold,
         )
-        model.fit(X_train, y_train)
-        print("[SUCCESS] Trained on GPU.")
-    except Exception as e:
-        print(f"GPU training failed (falling back to CPU): {e}")
-        model = xgb.XGBRegressor(
-            n_estimators=400,
-            max_depth=8,
-            learning_rate=0.05,
-            min_child_weight=5,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            tree_method='hist',
-            enable_categorical=True,
-            objective='reg:quantileerror',
-            quantile_alpha=quantile_alphas,
-            random_state=42,
-        )
-        model.fit(X_train, y_train)
-        print("[SUCCESS] Trained on CPU.")
+        fold_model.fit(X_tr, y_tr)
+        preds = fold_model.predict(X_te)
+        y_arr = y_te.to_numpy()
 
-    # ── Evaluation ───────────────────────────────────────────────────────────
-    model.set_params(device='cpu')
-    preds = model.predict(X_test)
-    y_arr = y_test.to_numpy()   # shape (n,) — within-stint degradation deltas
+        # Pinball loss
+        p05_err = np.where(y_arr >= preds[:, 0], 0.05 * (y_arr - preds[:, 0]), 0.95 * (preds[:, 0] - y_arr)).mean()
+        p50_err = np.where(y_arr >= preds[:, 1], 0.50 * (y_arr - preds[:, 1]), 0.50 * (preds[:, 1] - y_arr)).mean()
+        p95_err = np.where(y_arr >= preds[:, 2], 0.95 * (y_arr - preds[:, 2]), 0.05 * (preds[:, 2] - y_arr)).mean()
 
-    print("\n── Quantile Model Evaluation (race-wise GroupKFold holdout) ──")
-    print(f"  Held-out circuits : {held_out_tracks}")
-    print(f"  Target            : {target}  (fuel-corrected delta above fresh-tyre baseline)")
+        p50_mae = float(mean_absolute_error(y_arr, preds[:, 1]))
+        p50_rmse = float(root_mean_squared_error(y_arr, preds[:, 1]))
+        coverage = float(((y_arr >= preds[:, 0]) & (y_arr <= preds[:, 2])).mean())
 
-    for i, tau in enumerate(quantile_alphas):
-        q_pred = preds[:, i]
-        errors = np.where(y_arr >= q_pred, tau * (y_arr - q_pred), (1 - tau) * (q_pred - y_arr))
-        print(f"  p{int(tau*100):02d} pinball loss : {errors.mean():.4f} s")
+        cv_p50_mae.append(p50_mae)
+        cv_p50_rmse.append(p50_rmse)
+        cv_coverage.append(coverage)
+        cv_pinball_05.append(p05_err)
+        cv_pinball_50.append(p50_err)
+        cv_pinball_95.append(p95_err)
 
-    # p50 classical regression metrics on within-stint delta
-    p50_preds = preds[:, 1]
-    r2   = r2_score(y_arr, p50_preds)
-    mae  = mean_absolute_error(y_arr, p50_preds)
-    rmse = float(np.sqrt(mean_squared_error(y_arr, p50_preds)))
-    print(f"\n  p50  R²   : {r2:.4f}  (on within-stint delta — not inflated by circuit identity)")
-    print(f"  p50  MAE  : {mae:.4f} s  (reviewer concern 3 metric: error on degradation component)")
-    print(f"  p50  RMSE : {rmse:.4f} s")
+        print(f"Fold {fold} ({len(held_out_tracks)} tracks, {len(X_te):,} laps): "
+              f"MAE = {p50_mae:.4f}s | RMSE = {p50_rmse:.4f}s | Cov(90%) = {coverage:.1%}")
 
-    # Per-tyre-age breakdown (reviewer concern 4: does tyre_age actually drive errors?)
-    test_df = df.iloc[test_idx].copy()
-    test_df['p50_pred'] = p50_preds
-    test_df['abs_err']  = (test_df['lap_time_delta'] - test_df['p50_pred']).abs()
-    if 'tyre_age' in test_df.columns:
-        print("\n  MAE by tyre age bucket:")
-        for bucket, label in [(range(1, 6), "Laps 1-5"), (range(6, 16), "Laps 6-15"),
-                               (range(16, 31), "Laps 16-30"), (range(31, 99), "Laps 31+")]:
-            subset = test_df[test_df['tyre_age'].isin(bucket)]
-            if len(subset):
-                print(f"    {label:12s}: MAE = {subset['abs_err'].mean():.4f} s  (n={len(subset):,})")
+    print("\n" + "─" * 65)
+    print("5-FOLD CROSS-VALIDATION SUMMARY (ON HELD-OUT CIRCUITS):")
+    print(f"  p50 MAE             : {np.mean(cv_p50_mae):.4f} +/- {np.std(cv_p50_mae):.4f} s")
+    print(f"  p50 RMSE            : {np.mean(cv_p50_rmse):.4f} +/- {np.std(cv_p50_rmse):.4f} s")
+    print(f"  p05 Pinball Loss    : {np.mean(cv_pinball_05):.4f} +/- {np.std(cv_pinball_05):.4f} s")
+    print(f"  p50 Pinball Loss    : {np.mean(cv_pinball_50):.4f} +/- {np.std(cv_pinball_50):.4f} s")
+    print(f"  p95 Pinball Loss    : {np.mean(cv_pinball_95):.4f} +/- {np.std(cv_pinball_95):.4f} s")
+    print(f"  90% Coverage Rate   : {np.mean(cv_coverage):.1%} +/- {np.std(cv_coverage):.1%}")
+    print("─" * 65)
 
-    coverage = float(((y_arr >= preds[:, 0]) & (y_arr <= preds[:, 2])).mean())
-    print(f"\n  90% Interval Coverage : {coverage:.1%}")
+    # ── Train Final Production Model on Full Dataset ──────────────────────────
+    print("\nTraining Final Production Model on all 73,309 laps...")
+    final_model = xgb.XGBRegressor(
+        n_estimators=350,
+        max_depth=6,
+        learning_rate=0.05,
+        min_child_weight=5,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        tree_method='hist',
+        objective='reg:quantileerror',
+        quantile_alpha=quantile_alphas,
+        random_state=42,
+    )
+    final_model.fit(X, y)
+    print("[SUCCESS] Production model trained.")
 
-    # ── Feature importance ───────────────────────────────────────────────────
-    importances = model.feature_importances_
+    # ── Feature Importances ───────────────────────────────────────────────────
+    importances = final_model.feature_importances_
     print("\n── Feature Importances (gain-based) ──")
     for feat, imp in sorted(zip(features, importances), key=lambda x: -x[1]):
-        print(f"  {feat:<22} : {imp:.4f}  ({imp*100:.2f}%)")
+        print(f"  {feat:<26} : {imp:.4f}  ({imp*100:.2f}%)")
 
-    # ── Save artifact ────────────────────────────────────────────────────────
+    # ── Verify Monotonic Degradation Curve ────────────────────────────────────
+    print("\n── Degradation Sanity Check (Pace delta vs tyre age) ──")
+    sample_ages = [1, 5, 10, 15, 20, 25]
+    test_batch = pd.DataFrame([
+        {
+            'tyre_age':                 age,
+            'compound_encoded':         2.0,  # Medium
+            'compound_hardness':        3.0,  # C3
+            'track_evolution':          85.0,
+            'TrackTemp':                32.0,
+            'fuel_mass':                60.0,
+            'abrasion_index':           3.0,
+            'circuit_length_km':        5.4,
+            'num_corners':              16.0,
+            'corner_density':           16.0 / 5.4,
+            'thermal_load':             age * 32.0,
+            'abrasion_load':            age * 3.0,
+            'wear_cliff':               (age / 15.0) ** 2.0,
+            'compound_age_interaction': age * 3.0,
+        }
+        for age in sample_ages
+    ])
+    preds_sample = final_model.predict(test_batch[features])
+    for age, (p5, p50, p95) in zip(sample_ages, preds_sample):
+        print(f"  Tyre Age {age:2d}: p05={p5:+.3f}s | p50={p50:+.3f}s | p95={p95:+.3f}s")
+
+    # ── Save Artifact ─────────────────────────────────────────────────────────
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     joblib.dump({
-        'model':           model,
+        'model':           final_model,
         'features':        features,
         'quantile_alphas': quantile_alphas,
-        'model_version':   'phase3_delta_target_no_leakage_groupkfold',
+        'model_version':   'phase2_physics14_quantile_groupkfold',
         'target':          target,
-        'held_out_tracks': held_out_tracks,
+        'cv_metrics': {
+            'mae_mean':       float(np.mean(cv_p50_mae)),
+            'mae_std':        float(np.std(cv_p50_mae)),
+            'rmse_mean':      float(np.mean(cv_p50_rmse)),
+            'rmse_std':       float(np.std(cv_p50_rmse)),
+            'coverage_mean':  float(np.mean(cv_coverage)),
+            'pinball_05_mean': float(np.mean(cv_pinball_05)),
+            'pinball_50_mean': float(np.mean(cv_pinball_50)),
+            'pinball_95_mean': float(np.mean(cv_pinball_95)),
+        }
     }, output_path)
-    print(f"\n[SAVED] Model saved to {output_path}")
+    print(f"\n[SAVED] Validated model artifact saved to {output_path}")
 
-    return model
-
+    return final_model

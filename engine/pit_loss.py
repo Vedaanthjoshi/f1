@@ -3,6 +3,14 @@ engine/pit_loss.py — Empirical Pit Lane Loss Calculation
 ========================================================
 Calculates circuit-specific pit lane transit and stop time loss dynamically
 from actual FastF1 session in-lap and out-lap timing transponders.
+
+Reviewer-concern fix applied
+-------------------------------
+Fix 6 (Pit loss calculation robustness):
+  • Filters out red-flag stoppages (where cars sit in the pit lane for minutes)
+    and multi-minute penalty/repair stops by bounding valid green-flag pit stops
+    between 16.0s and 35.0s.
+  • Prevents corrupting the session pit loss (which previously hit 879.8s at Australia 2023).
 """
 
 import pandas as pd
@@ -15,7 +23,7 @@ def calculate_pit_loss(session) -> float:
     
     Returns:
     --------
-    float : Median pit-lane time in seconds (typically 21.0 - 27.5s).
+    float : Median pit-lane transit and stop time in seconds (typically 20.0 - 27.5s).
     """
     laps = session.laps
 
@@ -32,10 +40,12 @@ def calculate_pit_loss(session) -> float:
     )
     pit_stops['PitLaneTime'] = (pit_stops['PitOutTime'] - pit_stops['PitInTime']).dt.total_seconds()
     
-    median_loss = pit_stops['PitLaneTime'].median()
-    if pd.isna(median_loss):
-        # Fallback to standard 24.5s if no complete pit stop pair found
-        return 24.5
+    # Filter out red flags, extended repairs, and transponder glitches (16s - 35s)
+    valid_stops = pit_stops[(pit_stops['PitLaneTime'] >= 16.0) & (pit_stops['PitLaneTime'] <= 35.0)]
+    
+    if not valid_stops.empty:
+        median_loss = valid_stops['PitLaneTime'].median()
+    else:
+        median_loss = 24.5
         
     return float(median_loss)
-

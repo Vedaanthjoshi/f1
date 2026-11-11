@@ -156,6 +156,7 @@ def render_strategy_dashboard():
             n_rollouts=n_rollouts,
             feature_cols=features,
             rival_gap_s=rival_gap_s,
+            total_laps=max_lap,
         )
 
     # Strategy Table

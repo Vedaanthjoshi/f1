@@ -2,9 +2,9 @@
 engine/monte_carlo.py — Probabilistic Monte Carlo Strategy Optimizer
 ====================================================================
 Vectorized 15-lap forward simulation across 6 tactical strategies.
-Samples degradation trajectories from quantile predictions, incorporates
-Safety Car likelihood and rival reaction dynamics, and identifies
-optimal pit windows based on net advantage and confidence intervals.
+Samples degradation trajectories from multi-quantile predictions (p05, p50, p95),
+incorporates circuit Safety Car likelihood, out-lap cold tyre warmup penalty,
+and two-agent game-theoretic rival reaction dynamics to identify optimal pit windows.
 """
 
 from __future__ import annotations
@@ -12,9 +12,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from engine.safety_car import SC_RATES, SC_RATE_DEFAULT, SC_PIT_LOSS_MULTIPLIER, get_circuit_sc_rate
+from engine.safety_car import get_circuit_sc_rate, SC_PIT_LOSS_MULTIPLIER
 from engine.strategies import STRATEGIES
-from engine.rival_reaction import calculate_cover_rate, apply_rival_reaction
+from engine.rival_reaction import calculate_cover_rate, simulate_undercut_differential
+from pipeline.features import CIRCUIT_PHYSICS, PIRELLI_EVENT_ALLOCATIONS, FEATURE_COLS_14
 
 
 def _build_feature_batch(
@@ -23,40 +24,47 @@ def _build_feature_batch(
     current_state: dict[str, Any],
     evos: np.ndarray,
     temps: np.ndarray,
+    fuel_masses: np.ndarray,
     feature_cols: list[str],
 ) -> pd.DataFrame:
-    """Build a horizon-length DataFrame for a single vectorized model.predict() call.
-
-    Note: baseline_pace is intentionally excluded from features (Fix 3 — target
-    leakage removal).  The new model predicts fuel_corrected_time directly.
-    """
+    """Build a horizon-length DataFrame for a single vectorized model.predict() call."""
     n = len(tyre_ages)
-    # Lookup circuit physics for the race (from current_state or CIRCUIT_PHYSICS table)
-    from pipeline.features import CIRCUIT_PHYSICS
-    track_name = current_state.get('Track', 'Unknown')
+    track_name = current_state.get('Track', '_default')
     circuit = CIRCUIT_PHYSICS.get(track_name, CIRCUIT_PHYSICS['_default'])
+    alloc = PIRELLI_EVENT_ALLOCATIONS.get(track_name, PIRELLI_EVENT_ALLOCATIONS['_default'])
+
+    # Determine physical Pirelli C-hardness for this compound
+    if compound_encoded == 1:
+        c_hard = alloc.get('SOFT', 4)
+    elif compound_encoded == 3:
+        c_hard = alloc.get('HARD', 2)
+    else:
+        c_hard = alloc.get('MEDIUM', 3)
+
+    corner_density = circuit['num_corners'] / circuit['circuit_length_km']
 
     data: dict[str, Any] = {
-        'tyre_age':           tyre_ages,
-        'compound_encoded':   np.full(n, compound_encoded, dtype=float),
-        'track_evolution':    evos,
-        'TrackTemp':          temps,
-        'Track':              [track_name] * n,
-        'Driver':             [current_state.get('Driver', 'UNK')] * n,
-        # Circuit physics (Fix 6)
-        'abrasion_index':     np.full(n, circuit['abrasion_index'],     dtype=float),
-        'circuit_length_km':  np.full(n, circuit['circuit_length_km'],  dtype=float),
-        'num_corners':        np.full(n, circuit['num_corners'],         dtype=float),
-        'compound_hardness':  np.full(n, circuit['compound_hardness'],   dtype=float),
-        # Physics interactions (14-feature suite)
-        'thermal_load':       tyre_ages * temps,
-        'abrasion_load':      tyre_ages * circuit['abrasion_index'],
-        'corner_density':     np.full(n, circuit['num_corners'] / circuit['circuit_length_km'], dtype=float),
-        'wear_cliff':         (tyre_ages / 15.0) ** 2.0,
+        'tyre_age':                 tyre_ages,
+        'compound_encoded':         np.full(n, compound_encoded, dtype=float),
+        'compound_hardness':        np.full(n, c_hard, dtype=float),
+        'track_evolution':          evos,
+        'TrackTemp':                temps,
+        'fuel_mass':                fuel_masses,
+        'abrasion_index':           np.full(n, circuit['abrasion_index'],    dtype=float),
+        'circuit_length_km':        np.full(n, circuit['circuit_length_km'], dtype=float),
+        'num_corners':              np.full(n, circuit['num_corners'],       dtype=float),
+        'corner_density':           np.full(n, corner_density,               dtype=float),
+        'thermal_load':             tyre_ages * temps,
+        'abrasion_load':            tyre_ages * circuit['abrasion_index'],
+        'wear_cliff':               (tyre_ages / 15.0) ** 2.0,
+        'compound_age_interaction': tyre_ages * c_hard,
+        'Track':                    [track_name] * n,
+        'Driver':                   [current_state.get('Driver', 'VER')] * n,
     }
     df = pd.DataFrame({col: data[col] for col in feature_cols if col in data})
     if 'Track' in df.columns:
-        df['Track']  = df['Track'].astype('category')
+        df['Track'] = df['Track'].astype('category')
+    if 'Driver' in df.columns:
         df['Driver'] = df['Driver'].astype('category')
     return df
 
@@ -65,10 +73,7 @@ def _predict_quantiles(
     model: Any,
     df: pd.DataFrame,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Call model.predict() and return (p05, p50, p95) arrays of shape (n_laps,).
-    Handles both multi-quantile models (n, 3) and legacy point-estimate models (n,).
-    """
+    """Call model.predict() and return (p05, p50, p95) arrays of shape (n_laps,)."""
     preds = model.predict(df)
     if preds.ndim == 2 and preds.shape[1] == 3:
         return preds[:, 0], preds[:, 1], preds[:, 2]
@@ -88,59 +93,58 @@ def run_mc_simulation(
     feature_cols: list[str] | None = None,
     seed: int = 42,
     rival_gap_s: float | None = None,
+    total_laps: int | None = None,
 ) -> list[dict[str, Any]]:
     """
-    Run Monte Carlo strategy evaluation across all candidate strategies.
+    Run Monte Carlo strategy evaluation across all candidate tactical strategies.
 
-    Returns:
-    --------
-    List of strategy result dictionaries sorted by expected net gain descending
-    (with Stay Out kept at index 0 as baseline).
+    Parameters
+    ----------
+    model : trained multi-quantile regression model (p05, p50, p95)
+    current_lap : int, current lap number
+    current_state : dict containing tyre_age, compound_encoded, baseline_pace, Track, Driver
+    track_env : DataFrame with LapNumber, track_evolution, TrackTemp
+    pit_loss_delta : float, dynamic pit stop time loss in seconds (~20-25s)
+    race_name : str, Grand Prix name
+    n_rollouts : int, number of Monte Carlo sampling paths (default 500)
+    horizon : int, forward prediction window in laps (default 15)
+    rival_gap_s : float or None, gap in seconds to defending rival (if attempting undercut)
+    total_laps : int or None, total scheduled race laps to clamp forward horizon
     """
     if feature_cols is None:
-        # Fix 3: baseline_pace removed — model now predicts absolute
-        # fuel_corrected_time, so no leakage through baseline subtraction.
-        # Fix 6: circuit physics features added for cross-circuit generalisation.
-        feature_cols = [
-            'tyre_age', 'compound_encoded',
-            'track_evolution', 'TrackTemp', 'Track', 'Driver',
-            'abrasion_index', 'circuit_length_km', 'num_corners', 'compound_hardness',
-        ]
+        feature_cols = FEATURE_COLS_14
+
+    # Dynamically clamp simulation horizon if near the scheduled race finish
+    if total_laps is not None and total_laps >= current_lap:
+        remaining = total_laps - current_lap + 1
+        horizon = max(2, min(horizon, remaining))
 
     sc_rate = get_circuit_sc_rate(race_name)
     rng = np.random.default_rng(seed)
     cover_rate = calculate_cover_rate(rival_gap_s)
 
     # Pre-compute shared track environment arrays across horizon laps
-    evo_map = track_env.set_index('LapNumber')['track_evolution'].to_dict()
-    temp_map = track_env.set_index('LapNumber')['TrackTemp'].to_dict()
-    last_evo = list(evo_map.values())[-1] if evo_map else 0.0
+    evo_map = track_env.set_index('LapNumber')['track_evolution'].to_dict() if 'LapNumber' in track_env.columns else {}
+    temp_map = track_env.set_index('LapNumber')['TrackTemp'].to_dict() if 'LapNumber' in track_env.columns else {}
+    last_evo = list(evo_map.values())[-1] if evo_map else 85.0
     last_temp = list(temp_map.values())[-1] if temp_map else 30.0
 
     horizon_laps = [current_lap + n for n in range(horizon)]
-    evos   = np.array([evo_map.get(l, last_evo)  for l in horizon_laps])
-    temps  = np.array([temp_map.get(l, last_temp) for l in horizon_laps])
-    # Fuel correction per horizon lap: model predicts lap_time_delta (above baseline,
-    # fuel-corrected). To reconstruct raw lap time: baseline + delta + fuel_correction.
-    fuel_corrections = np.array([
-        np.maximum(110.0 - 1.7 * l, 2.0) * 0.03 for l in horizon_laps
-    ])
+    evos = np.array([evo_map.get(l, last_evo) for l in horizon_laps])
+    temps = np.array([temp_map.get(l, last_temp) for l in horizon_laps])
+    fuel_masses = np.array([np.maximum(110.0 - 1.7 * l, 2.0) for l in horizon_laps])
+    fuel_corrections = fuel_masses * 0.03
 
-    # --- Stay-Out baseline (one model call -> sample n_rollouts trajectories) ---
+    # --- Stay-Out baseline (Driver A on current worn tyre progression) ---
     so_ages = np.array([current_state['tyre_age'] + n for n in range(horizon)])
     so_df = _build_feature_batch(
         so_ages, current_state['compound_encoded'],
-        current_state, evos, temps, feature_cols
+        current_state, evos, temps, fuel_masses, feature_cols
     )
-    # Stay-Out baseline: model predicts lap_time_delta (fuel-corrected degradation
-    # above fresh-tyre pace). Reconstruct absolute lap times for comparison:
-    #   raw_lap_time = baseline_pace + predicted_delta + fuel_correction(lap_n)
-    # fuel_corrections vary per lap number (less fuel = faster correction term).
     so_p5, so_p50, so_p95 = _predict_quantiles(model, so_df)
-    so_std = np.maximum((so_p95 - so_p5) / (2 * 1.645), 1e-5)
+    so_std = np.maximum((so_p95 - so_p5) / (2 * 1.645), 1e-4)
     so_delta_samples = rng.normal(loc=so_p50, scale=so_std, size=(n_rollouts, horizon))
     so_lap_times = current_state['baseline_pace'] + so_delta_samples + fuel_corrections
-    so_total = so_lap_times.sum(axis=1)
 
     results: list[dict[str, Any]] = []
 
@@ -148,13 +152,13 @@ def run_mc_simulation(
         pit_offset = strat['pit_offset']
         strat_compound = strat['compound_encoded']
 
-        # Stay Out baseline
+        # ── Stay Out baseline ─────────────────────────────────────────────────
         if pit_offset is None:
             results.append({
                 'name':               'Stay Out',
                 'pit_offset':         None,
                 'compound_encoded':   current_state['compound_encoded'],
-                'p_net_gain':         0.5,
+                'p_net_gain':         0.50,
                 'expected_gain_s':    0.0,
                 'gain_ci_low':        0.0,
                 'gain_ci_high':       0.0,
@@ -166,7 +170,8 @@ def run_mc_simulation(
             })
             continue
 
-        # Pit Strategy: build tyre-age profile around the pit lap
+        # ── Pit Strategy ──────────────────────────────────────────────────────
+        # Tyre age resets to 1 upon taking fresh rubber
         pit_ages = np.array([
             current_state['tyre_age'] + n if n < pit_offset else 1 + (n - pit_offset)
             for n in range(horizon)
@@ -174,64 +179,100 @@ def run_mc_simulation(
 
         pit_df = _build_feature_batch(
             pit_ages, strat_compound,
-            current_state, evos, temps, feature_cols
+            current_state, evos, temps, fuel_masses, feature_cols
         )
         pit_p5, pit_p50, pit_p95 = _predict_quantiles(model, pit_df)
-        pit_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-5)
+        pit_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-4)
 
         pit_delta_samples = rng.normal(loc=pit_p50, scale=pit_std, size=(n_rollouts, horizon))
-        # Delta target: reconstruct absolute lap times for comparison.
-        pit_lap_times = current_state['baseline_pace'] + pit_delta_samples + fuel_corrections
+        pit_driving_lap_times = current_state['baseline_pace'] + pit_delta_samples + fuel_corrections
 
-        # Fix 5 — Out-lap tyre warmup penalty
-        # The lap immediately after the pit stop (out-lap) incurs a ~1.5 s pace
-        # deficit from cold tyre warmup before the rubber reaches operating
-        # temperature.  Previously this cost was not modelled, making pit
-        # strategies appear artificially attractive.
-        OUT_LAP_PENALTY_S = 1.5   # representative F1 out-lap delta (seconds)
-        out_lap_col = pit_offset + 1 if pit_offset + 1 < horizon else pit_offset
-        pit_lap_times[:, out_lap_col] += OUT_LAP_PENALTY_S
-
-        # Safety Car stochastic events
+        # Safety Car stochastic sampling on pit lap
         sc_on_pit_lap = rng.binomial(1, sc_rate, size=n_rollouts).astype(bool)
         effective_pit_loss = np.where(
             sc_on_pit_lap,
             pit_loss_delta * SC_PIT_LOSS_MULTIPLIER,
             pit_loss_delta,
         )
-        pit_lap_times[:, pit_offset] += effective_pit_loss
 
-        # Per-lap net advantage before reaction
-        base_net_gains_per_lap = so_lap_times - pit_lap_times
+        OUT_LAP_PENALTY_S = 1.5  # cold tyre out-lap warmup penalty
 
-        # Apply rival reaction clamping
-        final_net_gains = apply_rival_reaction(
-            base_net_gains_per_lap, pit_offset, horizon, cover_rate, n_rollouts, rng
+        # Build defender fresh-tyre predictions for the cover/extend branches.
+        # When the defender pits to cover, they go onto the same compound as the attacker.
+        # We model defender's post-stop pace as fresh tyre age starting from 1,
+        # using the same compound as the attacking strategy so both cars are credited
+        # with equivalent fresh rubber after their respective stops.
+        def_cover_ages = np.array([1 + n for n in range(horizon)], dtype=float)
+        def_cover_df = _build_feature_batch(
+            def_cover_ages, strat_compound,
+            current_state, evos, temps, fuel_masses, feature_cols
         )
+        _, def_cover_p50, _ = _predict_quantiles(model, def_cover_df)
+        # Sample defender's fresh-tyre paths with the same quantile spread as attacker
+        def_cover_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-4)
+        def_cover_delta_samples = rng.normal(loc=def_cover_p50, scale=def_cover_std, size=(n_rollouts, horizon))
+        defender_fresh_lap_times = current_state['baseline_pace'] + def_cover_delta_samples + fuel_corrections
+
+        # Evaluate net advantage: two-car undercut differential vs competitor
+        if rival_gap_s is not None:
+            final_net_gains = simulate_undercut_differential(
+                attacker_lap_times_no_pitloss=pit_driving_lap_times,
+                defender_stay_out_times=so_lap_times,
+                pit_offset=pit_offset,
+                horizon=horizon,
+                effective_pit_loss=effective_pit_loss,
+                rival_gap_s=rival_gap_s,
+                cover_rate=cover_rate,
+                n_rollouts=n_rollouts,
+                rng=rng,
+                out_lap_penalty=OUT_LAP_PENALTY_S,
+                defender_fresh_lap_times=defender_fresh_lap_times,
+            )
+        else:
+            # Single-car stint pace optimization against staying out forever
+            full_pit_times = pit_driving_lap_times.copy()
+            full_pit_times[:, pit_offset] += effective_pit_loss
+            out_lap_idx = min(pit_offset + 1, horizon - 1)
+            full_pit_times[:, out_lap_idx] += OUT_LAP_PENALTY_S
+            final_net_gains = so_lap_times.sum(axis=1) - full_pit_times.sum(axis=1)
 
         p_net_gain = float((final_net_gains > 0).mean())
         expected_gain = float(final_net_gains.mean())
         gain_ci_low = float(np.percentile(final_net_gains, 5))
         gain_ci_high = float(np.percentile(final_net_gains, 95))
 
-        # Expected gain assuming certain SC this lap
-        pit_lap_times_sc = pit_lap_times.copy()
-        pit_lap_times_sc[:, pit_offset] -= effective_pit_loss
-        pit_lap_times_sc[:, pit_offset] += pit_loss_delta * SC_PIT_LOSS_MULTIPLIER
-        sc_net_gains = so_total - pit_lap_times_sc.sum(axis=1)
-        sc_expected = float(sc_net_gains.mean())
+        # Expected gain assuming certain SC on pit lap
+        sc_pit_loss_const = np.full(n_rollouts, pit_loss_delta * SC_PIT_LOSS_MULTIPLIER)
+        if rival_gap_s is not None:
+            sc_gains = simulate_undercut_differential(
+                attacker_lap_times_no_pitloss=pit_driving_lap_times,
+                defender_stay_out_times=so_lap_times,
+                pit_offset=pit_offset,
+                horizon=horizon,
+                effective_pit_loss=sc_pit_loss_const,
+                rival_gap_s=rival_gap_s,
+                cover_rate=cover_rate,
+                n_rollouts=n_rollouts,
+                rng=rng,
+                out_lap_penalty=OUT_LAP_PENALTY_S,
+                defender_fresh_lap_times=defender_fresh_lap_times,
+            )
+        else:
+            full_pit_times_sc = pit_driving_lap_times.copy()
+            full_pit_times_sc[:, pit_offset] += sc_pit_loss_const
+            full_pit_times_sc[:, min(pit_offset + 1, horizon - 1)] += OUT_LAP_PENALTY_S
+            sc_gains = so_lap_times.sum(axis=1) - full_pit_times_sc.sum(axis=1)
+        sc_expected = float(sc_gains.mean())
 
-        # Crossover lap: first lap where fresh-tyre p50 is faster than stay-out p50
-        lap_delta_p50 = pit_p50 - so_p50
-        crossover_rel = None
+        # Crossover lap: first lap where fresh tyre degradation is lower than stay-out degradation
+        crossover_lap = None
         for n in range(pit_offset, horizon):
-            if lap_delta_p50[n] < 0:
-                crossover_rel = n
+            if (pit_p50[n] - so_p50[n]) < -0.15:  # significant fresh tyre pace advantage
+                crossover_lap = current_lap + n
                 break
-        crossover_lap = (current_lap + crossover_rel) if crossover_rel is not None else None
 
-        # Adaptive decision rule: window open if >= 55% confidence and positive expected gain
-        window_open = (p_net_gain >= 0.55) and (expected_gain > 0)
+        # Undercut decision threshold: p_net_gain >= 50% and expected gain > 0
+        window_open = (p_net_gain >= 0.50) and (expected_gain > 0.0)
 
         results.append({
             'name':               strat['name'],
@@ -248,7 +289,7 @@ def run_mc_simulation(
             'p50_lap_times':      (current_state['baseline_pace'] + pit_p50 + fuel_corrections).tolist(),
         })
 
-    # Sort: Stay Out always at index 0, remaining ranked by expected gain descending
+    # Sort: Stay Out at index 0, remaining ranked by expected gain descending
     stay_out = [r for r in results if r['name'] == 'Stay Out']
     pit_strats = sorted(
         [r for r in results if r['name'] != 'Stay Out'],
@@ -258,64 +299,6 @@ def run_mc_simulation(
     return stay_out + pit_strats
 
 
-def simulate_undercut_window(
-    model: Any,
-    current_lap: int,
-    current_state: dict[str, Any],
-    track_env: pd.DataFrame,
-    pit_loss_delta: float,
-    next_compound_encoded: int = 3,
-    feature_cols: list[str] | None = None,
-    race_name: str = "",
-    n_rollouts: int = 500,
-) -> dict[str, Any]:
-    """Phase 1-compatible wrapper returning legacy and Phase 2 keys."""
-    mc_results = run_mc_simulation(
-        model=model,
-        current_lap=current_lap,
-        current_state=current_state,
-        track_env=track_env,
-        pit_loss_delta=pit_loss_delta,
-        race_name=race_name,
-        n_rollouts=n_rollouts,
-        feature_cols=feature_cols,
-    )
-
-    best_match = next(
-        (r for r in mc_results if r['pit_offset'] == 0 and r['compound_encoded'] == next_compound_encoded),
-        mc_results[1] if len(mc_results) > 1 else mc_results[0],
-    )
-    stay_out = mc_results[0]
-
-    so_times = stay_out['p50_lap_times']
-    pit_times = best_match['p50_lap_times']
-    if pit_times:
-        pit_times_with_loss = pit_times.copy()
-        pit_times_with_loss[0] += pit_loss_delta
-        lap_advantage = [so_times[i] - pit_times[i] for i in range(len(so_times))]
-        net_undercut_advantage = list(pd.Series(lap_advantage).cumsum())
-        stay_out_curve = list(pd.Series(so_times).cumsum())
-        pit_now_curve = list(pd.Series(pit_times_with_loss).cumsum())
-    else:
-        net_undercut_advantage = []
-        stay_out_curve = []
-        pit_now_curve = []
-
-    return {
-        'stay_out_curve':         stay_out_curve,
-        'pit_now_curve':          pit_now_curve,
-        'net_undercut_advantage': net_undercut_advantage,
-        'crossover_lap':          best_match['crossover_lap'],
-        'window_open':            best_match['window_open'],
-        'stay_out_lap_times':     so_times,
-        'pit_now_lap_times':      pit_times,
-        'mc_results':             mc_results,
-        'best_strategy':          best_match,
-        'p_net_gain':             best_match['p_net_gain'],
-        'expected_gain_s':        best_match['expected_gain_s'],
-        'gain_ci_low':            best_match['gain_ci_low'],
-        'gain_ci_high':           best_match['gain_ci_high'],
-        'sc_expected_gain_s':     best_match['sc_expected_gain_s'],
-        'cover_rate':             best_match.get('cover_rate', 0.0),
-    }
-
+def simulate_undercut_window(*args, **kwargs):
+    """Facade alias for run_mc_simulation."""
+    return run_mc_simulation(*args, **kwargs)

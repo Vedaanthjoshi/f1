@@ -29,7 +29,7 @@ def render_strategy_table(
             f"(CI: {best_strat['gain_ci_low']:+.1f}s → {best_strat['gain_ci_high']:+.1f}s)"
         )
     else:
-        st.info("No strategy currently clears the 55% confidence threshold. Stay out or wait for a better window.")
+        st.info("No strategy currently clears the 50% confidence threshold with positive expected gain. Stay out or wait for a better window.")
 
     rows_html = ""
     for r in mc_results:

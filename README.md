@@ -10,9 +10,9 @@ This repository includes detailed academic and technical documentation structure
 
 | Document | Focus & Paradigm | Key Highlights |
 | :--- | :--- | :--- |
-| **[`01_ORIGINAL_PROJECT.md`](file:///c:/Projects/project-reviewed-phase-2/01_ORIGINAL_PROJECT.md)** | **Phase 1: Naive Baseline** | Analysis of the initial model, documentation of the 5 fatal leakage flaws (baseline pace leakage, lookahead bias, negative fuel mass, random 80/20 shuffle), and why $R^2=0.97$ was invalid. |
-| **[`02_ORIGINAL_PROJECT_14_FEATURES.md`](file:///c:/Projects/project-reviewed-phase-2/02_ORIGINAL_PROJECT_14_FEATURES.md)** | **Phase 1.5: 14-Feature Point Model** | Deterministic regression without Monte Carlo. Exact formulas for the 14 physics features, GroupKFold (k=5) evaluation on unseen circuits ($R^2=0.9176$ on pace, $R^2=0.5805$ on pure degradation, $\text{MAE}=0.4037\,\text{s}$), and gain importances. |
-| **[`03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md`](file:///c:/Projects/project-reviewed-phase-2/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md)** | **Phase 2: Final Probabilistic Engine** | Full multi-output quantile regression with Pinball Loss, 500-rollout Monte Carlo optimizer, out-lap cold tyre warmup penalty, 4-tier competitor rival reaction model, 24-circuit Safety Car model, and 15-race backtest validation ($60\%$ accuracy, $100\%$ precision). |
+| **[`01_ORIGINAL_PROJECT.md`](file:///c:/f1/01_ORIGINAL_PROJECT.md)** | **Phase 1: Naive Baseline** | Analysis of the initial model, documentation of the 5 fatal leakage flaws (baseline pace leakage, lookahead bias, negative fuel mass, random 80/20 shuffle), and why $R^2=0.97$ was invalid. |
+| **[`02_ORIGINAL_PROJECT_14_FEATURES.md`](file:///c:/f1/02_ORIGINAL_PROJECT_14_FEATURES.md)** | **Phase 1.5: 14-Feature Point Model** | Deterministic regression without Monte Carlo. Exact formulas for the 14 physics features, GroupKFold (k=5) evaluation on unseen circuits, and gain importances. |
+| **[`03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md`](file:///c:/f1/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md)** | **Phase 2: Final Probabilistic Engine** | Full multi-output quantile regression with Pinball Loss, 500-rollout Monte Carlo optimizer, out-lap cold tyre warmup penalty, two-car game-theoretic competitor cover model, 24-circuit Safety Car model, and 15-race backtest validation ($80.0\%$ operational precision). |
 
 ---
 
@@ -28,10 +28,10 @@ This repository includes detailed academic and technical documentation structure
 | **Track Evolution** | Lookahead session mean | **Causal Lag-1 Expanding Median** | **Causal Lag-1 Expanding Median** |
 | **Tyre Warmup Penalty** | $0.0\,\text{s}$ (Instant grip) | $+1.5\,\text{s}$ on Out-Lap | $+1.5\,\text{s}$ on Out-Lap |
 | **Uncertainty Bounds** | None (Single float) | None (Point estimate) | **$90\%$ Confidence Intervals ($p05 - p95$)** |
-| **Rival Tactical Reaction** | Ignored | Ignored | **Calibrated Cover Probability ($P_{\text{cover}}$)** |
+| **Rival Tactical Reaction** | Ignored | Ignored | **Two-Car Relative Undercut Differential** |
 | **Safety Car Dynamics** | Ignored | Ignored | **24-Circuit Poisson Rates + 65% Loss Drop** |
-| **Backtest Precision** | $0.0\%$ | N/A (Deterministic) | **$100.0\%$ (Zero false pit alarms)** |
-| **Backtest Accuracy** | $26.7\%$ | $46.7\%$ | **$60.0\%$ (9 / 15 correct decisions)** |
+| **Backtest Precision** | $0.0\%$ | N/A (Deterministic) | **$80.0\%$ (4 TP, 1 FP on real telemetry)** |
+| **Backtest Accuracy** | $26.7\%$ | $46.7\%$ | **$53.3\%$ (8 / 15 correct decisions)** |
 
 ---
 
@@ -62,7 +62,7 @@ This repository includes detailed academic and technical documentation structure
 │   └── explainability.py               # SHAP feature importance & attribution
 │
 ├── data/                               # Historical datasets & metadata
-│   ├── historical_laps.csv             # 33,569 clean racing laps (2024–2025)
+│   ├── historical_laps.csv             # 73,309 clean racing laps (2022–2025)
 │   ├── tracks.json                     # Circuit physics parameters
 │   └── drivers.json                    # Grid driver profiles & styling
 │

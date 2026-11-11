@@ -31,37 +31,75 @@ import pandas as pd
 # abrasion_index : Pirelli's 1-5 scale (5 = most abrasive, destroys tyres fastest)
 # circuit_length_km : official FIA circuit length
 # num_corners : total corners per lap
-# compound_hardness : softest Pirelli C-spec available at this event (1=hardest, 5=softest)
-#   Soft at Bahrain (C2) = 2;  Soft at Monaco (C5) = 5
 
 CIRCUIT_PHYSICS: dict[str, dict] = {
-    'Bahrain Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.412, 'num_corners': 15, 'compound_hardness': 1},
-    'Saudi Arabian Grand Prix':     {'abrasion_index': 2, 'circuit_length_km': 6.174, 'num_corners': 27, 'compound_hardness': 3},
-    'Australian Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 5.278, 'num_corners': 16, 'compound_hardness': 3},
-    'Japanese Grand Prix':          {'abrasion_index': 3, 'circuit_length_km': 5.807, 'num_corners': 18, 'compound_hardness': 2},
-    'Chinese Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 5.451, 'num_corners': 16, 'compound_hardness': 2},
-    'Miami Grand Prix':             {'abrasion_index': 3, 'circuit_length_km': 5.412, 'num_corners': 19, 'compound_hardness': 3},
-    'Emilia Romagna Grand Prix':    {'abrasion_index': 2, 'circuit_length_km': 4.909, 'num_corners': 19, 'compound_hardness': 3},
-    'Monaco Grand Prix':            {'abrasion_index': 1, 'circuit_length_km': 3.337, 'num_corners': 19, 'compound_hardness': 5},
-    'Canadian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.361, 'num_corners': 14, 'compound_hardness': 3},
-    'Spanish Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 4.657, 'num_corners': 16, 'compound_hardness': 2},
-    'Austrian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.318, 'num_corners': 10, 'compound_hardness': 3},
-    'British Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.891, 'num_corners': 18, 'compound_hardness': 2},
-    'Hungarian Grand Prix':         {'abrasion_index': 3, 'circuit_length_km': 4.381, 'num_corners': 14, 'compound_hardness': 3},
-    'Belgian Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 7.004, 'num_corners': 19, 'compound_hardness': 2},
-    'Dutch Grand Prix':             {'abrasion_index': 4, 'circuit_length_km': 4.259, 'num_corners': 14, 'compound_hardness': 2},
-    'Italian Grand Prix':           {'abrasion_index': 1, 'circuit_length_km': 5.793, 'num_corners': 11, 'compound_hardness': 4},
-    'Azerbaijan Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 6.003, 'num_corners': 20, 'compound_hardness': 4},
-    'Singapore Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 4.940, 'num_corners': 23, 'compound_hardness': 3},
-    'United States Grand Prix':     {'abrasion_index': 4, 'circuit_length_km': 5.513, 'num_corners': 20, 'compound_hardness': 2},
-    'Mexico City Grand Prix':       {'abrasion_index': 3, 'circuit_length_km': 4.304, 'num_corners': 17, 'compound_hardness': 2},
-    'São Paulo Grand Prix':         {'abrasion_index': 4, 'circuit_length_km': 4.309, 'num_corners': 15, 'compound_hardness': 2},
-    'Las Vegas Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 6.201, 'num_corners': 17, 'compound_hardness': 4},
-    'Qatar Grand Prix':             {'abrasion_index': 5, 'circuit_length_km': 5.419, 'num_corners': 16, 'compound_hardness': 1},
-    'Abu Dhabi Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 5.281, 'num_corners': 16, 'compound_hardness': 3},
+    'Bahrain Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.412, 'num_corners': 15},
+    'Saudi Arabian Grand Prix':     {'abrasion_index': 2, 'circuit_length_km': 6.174, 'num_corners': 27},
+    'Australian Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 5.278, 'num_corners': 16},
+    'Japanese Grand Prix':          {'abrasion_index': 3, 'circuit_length_km': 5.807, 'num_corners': 18},
+    'Chinese Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 5.451, 'num_corners': 16},
+    'Miami Grand Prix':             {'abrasion_index': 3, 'circuit_length_km': 5.412, 'num_corners': 19},
+    'Emilia Romagna Grand Prix':    {'abrasion_index': 2, 'circuit_length_km': 4.909, 'num_corners': 19},
+    'Monaco Grand Prix':            {'abrasion_index': 1, 'circuit_length_km': 3.337, 'num_corners': 19},
+    'Canadian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.361, 'num_corners': 14},
+    'Spanish Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 4.657, 'num_corners': 16},
+    'Austrian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.318, 'num_corners': 10},
+    'British Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.891, 'num_corners': 18},
+    'Hungarian Grand Prix':         {'abrasion_index': 3, 'circuit_length_km': 4.381, 'num_corners': 14},
+    'Belgian Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 7.004, 'num_corners': 19},
+    'Dutch Grand Prix':             {'abrasion_index': 4, 'circuit_length_km': 4.259, 'num_corners': 14},
+    'Italian Grand Prix':           {'abrasion_index': 1, 'circuit_length_km': 5.793, 'num_corners': 11},
+    'Azerbaijan Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 6.003, 'num_corners': 20},
+    'Singapore Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 4.940, 'num_corners': 23},
+    'United States Grand Prix':     {'abrasion_index': 4, 'circuit_length_km': 5.513, 'num_corners': 20},
+    'Mexico City Grand Prix':       {'abrasion_index': 3, 'circuit_length_km': 4.304, 'num_corners': 17},
+    'São Paulo Grand Prix':         {'abrasion_index': 4, 'circuit_length_km': 4.309, 'num_corners': 15},
+    'Las Vegas Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 6.201, 'num_corners': 17},
+    'Qatar Grand Prix':             {'abrasion_index': 5, 'circuit_length_km': 5.419, 'num_corners': 16},
+    'Abu Dhabi Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 5.281, 'num_corners': 16},
     # Fallback for any unlisted circuit — use global averages
-    '_default':                     {'abrasion_index': 3, 'circuit_length_km': 5.1,   'num_corners': 16, 'compound_hardness': 3},
+    '_default':                     {'abrasion_index': 3, 'circuit_length_km': 5.1,   'num_corners': 16},
 }
+
+# Physical Pirelli C-Spec Allocations (C1 = 1 [hardest] to C5 = 5 [softest])
+# Fixes Reviewer Concern 8: Soft/Medium/Hard are relative labels;
+# this table maps the actual physical compound hardness for each event.
+PIRELLI_EVENT_ALLOCATIONS: dict[str, dict[str, int]] = {
+    'Bahrain Grand Prix':           {'HARD': 1, 'MEDIUM': 2, 'SOFT': 3},  # C1, C2, C3
+    'Saudi Arabian Grand Prix':     {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},  # C2, C3, C4
+    'Australian Grand Prix':        {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'Japanese Grand Prix':          {'HARD': 1, 'MEDIUM': 2, 'SOFT': 3},  # C1, C2, C3
+    'Chinese Grand Prix':           {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},  # C2, C3, C4
+    'Miami Grand Prix':             {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},  # C2, C3, C4
+    'Emilia Romagna Grand Prix':    {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'Monaco Grand Prix':            {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'Canadian Grand Prix':          {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'Spanish Grand Prix':           {'HARD': 1, 'MEDIUM': 2, 'SOFT': 3},  # C1, C2, C3
+    'Austrian Grand Prix':          {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'British Grand Prix':           {'HARD': 1, 'MEDIUM': 2, 'SOFT': 3},  # C1, C2, C3
+    'Hungarian Grand Prix':         {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'Belgian Grand Prix':           {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},  # C2, C3, C4
+    'Dutch Grand Prix':             {'HARD': 1, 'MEDIUM': 2, 'SOFT': 3},  # C1, C2, C3
+    'Italian Grand Prix':           {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},  # C2, C3, C4
+    'Azerbaijan Grand Prix':        {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'Singapore Grand Prix':         {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'United States Grand Prix':     {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},  # C2, C3, C4
+    'Mexico City Grand Prix':       {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'São Paulo Grand Prix':         {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},  # C2, C3, C4
+    'Las Vegas Grand Prix':         {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    'Qatar Grand Prix':             {'HARD': 1, 'MEDIUM': 2, 'SOFT': 3},  # C1, C2, C3
+    'Abu Dhabi Grand Prix':         {'HARD': 3, 'MEDIUM': 4, 'SOFT': 5},  # C3, C4, C5
+    '_default':                     {'HARD': 2, 'MEDIUM': 3, 'SOFT': 4},
+}
+
+# The complete 14-Feature Physics-Informed Suite
+FEATURE_COLS_14 = [
+    'tyre_age', 'compound_encoded', 'compound_hardness',
+    'track_evolution', 'TrackTemp', 'fuel_mass',
+    'abrasion_index', 'circuit_length_km', 'num_corners',
+    'corner_density', 'thermal_load', 'abrasion_load',
+    'wear_cliff', 'compound_age_interaction'
+]
 
 # Column names added to DataFrame (must stay consistent with trainer feature list)
 CIRCUIT_FEATURE_COLS = [
@@ -77,48 +115,62 @@ def _get_circuit_physics(track_name: str) -> dict:
 
 def apply_circuit_features(df: pd.DataFrame, track_name: str | None = None) -> pd.DataFrame:
     """
-    Attach circuit physics features to each row.
-    If track_name is provided (e.g. 'Bahrain Grand Prix'), use it directly.
-    Otherwise, try to read a 'Track' column already present in the DataFrame.
+    Attach circuit physics features and physical Pirelli C-compound hardness to each row.
     """
     result = df.copy()
-    if track_name is not None:
-        physics = _get_circuit_physics(track_name)
-        for col, val in physics.items():
+    
+    # 1. Base circuit physics (abrasion, length, corners)
+    for col in ['abrasion_index', 'circuit_length_km', 'num_corners']:
+        if track_name is not None:
+            val = _get_circuit_physics(track_name).get(col, CIRCUIT_PHYSICS['_default'][col])
             result[col] = val
-    elif 'Track' in result.columns:
-        for col in CIRCUIT_FEATURE_COLS:
+        elif 'Track' in result.columns:
             result[col] = result['Track'].map(
                 lambda t, c=col: _get_circuit_physics(t).get(c, CIRCUIT_PHYSICS['_default'][c])
             )
-    else:
-        # No track info available — apply defaults
-        physics = CIRCUIT_PHYSICS['_default']
-        for col, val in physics.items():
-            result[col] = val
+        else:
+            result[col] = CIRCUIT_PHYSICS['_default'][col]
+
+    # 2. Physical Pirelli C-Spec Compound Hardness (1 = C1 hardest, 5 = C5 softest)
+    # Fixes Reviewer Concern 8: Differentiates physical rubber hardness from tactical 1/2/3 labels.
+    def _lookup_c_hardness(row):
+        t = track_name if track_name is not None else row.get('Track', '_default')
+        alloc = PIRELLI_EVENT_ALLOCATIONS.get(t, PIRELLI_EVENT_ALLOCATIONS['_default'])
+        # Try raw compound string first
+        comp_str = str(row.get('Compound', '')).upper()
+        if comp_str in alloc:
+            return alloc[comp_str]
+        # Fall back to compound_encoded: 1=SOFT, 2=MEDIUM, 3=HARD
+        enc = row.get('compound_encoded', 2)
+        if enc == 1:
+            return alloc.get('SOFT', 4)
+        elif enc == 3:
+            return alloc.get('HARD', 2)
+        else:
+            return alloc.get('MEDIUM', 3)
+
+    result['compound_hardness'] = result.apply(_lookup_c_hardness, axis=1)
+
     return result
 
 
 def apply_feature_engineering(df: pd.DataFrame, track_name: str | None = None) -> pd.DataFrame:
     """
     Derive domain features required by the degradation ML model:
-      - tyre_age          : consecutive stint laps on current tyre set
-      - compound_encoded  : 1=SOFT, 2=MEDIUM, 3=HARD
-      - fuel_corrected_time : lap time normalised for burned fuel (clamped)
-      - track_evolution   : causal rubbering-in proxy (no lookahead)
-      - abrasion_index    : Pirelli circuit surface roughness (1-5)
-      - circuit_length_km : official circuit length
-      - num_corners       : corners per lap
-      - compound_hardness : softest C-spec available (1-5)
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Raw lap DataFrame from FastF1 (must have LapNumber, TyreLife, Compound,
-        LapTime_s, optionally TrackTemp).
-    track_name : str, optional
-        Grand Prix name (e.g. 'Bahrain Grand Prix'). If omitted the function
-        will use a 'Track' column if present in df, else apply defaults.
+      - tyre_age                : consecutive stint laps on current tyre set
+      - compound_encoded        : 1=SOFT, 2=MEDIUM, 3=HARD
+      - compound_hardness       : Pirelli physical C-spec (1=C1 to 5=C5)
+      - fuel_mass               : remaining fuel mass clamped >= 2 kg
+      - fuel_corrected_time     : lap time normalised for burned fuel
+      - track_evolution         : causal rubbering-in proxy (expanding lag-1 median)
+      - abrasion_index          : Pirelli circuit surface roughness (1-5)
+      - circuit_length_km       : official circuit length
+      - num_corners             : corners per lap
+      - corner_density          : num_corners / circuit_length_km
+      - thermal_load            : tyre_age * TrackTemp
+      - abrasion_load           : tyre_age * abrasion_index
+      - wear_cliff              : (tyre_age / 15.0) ** 2.0
+      - compound_age_interaction: tyre_age * compound_hardness
     """
     engineered = df.copy()
 
@@ -127,13 +179,14 @@ def apply_feature_engineering(df: pd.DataFrame, track_name: str | None = None) -
 
     # ── 2. Compound encoding (dry compounds only) ────────────────────────────
     compound_map = {'SOFT': 1, 'MEDIUM': 2, 'HARD': 3}
-    engineered['compound_encoded'] = engineered['Compound'].map(compound_map)
+    engineered['compound_encoded'] = engineered['Compound'].map(compound_map).fillna(2)
 
     # ── 3. Fuel correction (Fix 1: clamp fuel mass to ≥ 2 kg) ───────────────
     # 110 kg starting fuel, burning ~1.7 kg/lap, correction ~0.03 s per kg.
     # Without the clamp the correction added time after lap 65 (negative mass).
     fuel_mass = np.maximum(110.0 - 1.7 * engineered['LapNumber'], 2.0)
     fuel_correction = fuel_mass * 0.03
+    engineered['fuel_mass'] = fuel_mass
     engineered['fuel_corrected_time'] = engineered['LapTime_s'] - fuel_correction
 
     # ── 4. Track evolution proxy (Fix 2: causal expanding window) ───────────
@@ -157,9 +210,7 @@ def apply_feature_engineering(df: pd.DataFrame, track_name: str | None = None) -
     )
     engineered['track_evolution'] = engineered['LapNumber'].map(causal_evo)
 
-    # ── 5. Circuit physics features (Fix 6) ─────────────────────────────────
-    # These let the model generalise to unseen circuits by physical properties
-    # rather than relying solely on the circuit name embedding.
+    # ── 5. Circuit physics features & compound hardness ─────────────────────
     engineered = apply_circuit_features(engineered, track_name=track_name)
 
     # ── 6. Physics Interactions & Non-linear Wear (14-Feature Suite) ────────
@@ -167,6 +218,7 @@ def apply_feature_engineering(df: pd.DataFrame, track_name: str | None = None) -
     engineered['abrasion_load'] = engineered['tyre_age'] * engineered['abrasion_index']
     engineered['corner_density'] = engineered['num_corners'] / engineered['circuit_length_km']
     engineered['wear_cliff'] = (engineered['tyre_age'] / 15.0) ** 2.0
+    engineered['compound_age_interaction'] = engineered['tyre_age'] * engineered['compound_hardness']
 
     return engineered
 

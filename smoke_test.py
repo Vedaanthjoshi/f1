@@ -35,10 +35,10 @@ print(f"  Values are monotonically decreasing (rubber-in): "
       f"{bool((out['track_evolution'].dropna().diff().dropna() <= 0).all())}")
 
 # ── Fix 3: baseline_pace gone from default feature list ──────────────────────
+from pipeline.features import FEATURE_COLS_14
+assert 'baseline_pace' not in FEATURE_COLS_14, "baseline_pace still in FEATURE_COLS_14!"
 import inspect, engine.monte_carlo as mc_mod
 src = inspect.getsource(mc_mod.run_mc_simulation)
-assert 'baseline_pace' not in src.split("feature_cols = [")[1].split("]")[0], \
-    "baseline_pace still in default feature_cols!"
 print("\nFix 3 — baseline_pace removed from feature list: OK")
 
 # ── Fix 4: GroupKFold used in trainer (not random split) ─────────────────────
