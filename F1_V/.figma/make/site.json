@@ -1,0 +1,10 @@
+{
+  "description": "Compare F1 driver telemetry and circuit data, then simulate pit timing and tyre choices to uncover undercut opportunities and race strategy advantages.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
