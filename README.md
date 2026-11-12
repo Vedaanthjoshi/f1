@@ -10,9 +10,9 @@ This repository includes detailed academic and technical documentation structure
 
 | Document | Focus & Paradigm | Key Highlights |
 | :--- | :--- | :--- |
-| **[`01_ORIGINAL_PROJECT.md`](file:///c:/f1/01_ORIGINAL_PROJECT.md)** | **Phase 1: Naive Baseline** | Analysis of the initial model, documentation of the 5 fatal leakage flaws (baseline pace leakage, lookahead bias, negative fuel mass, random 80/20 shuffle), and why $R^2=0.97$ was invalid. |
-| **[`02_ORIGINAL_PROJECT_14_FEATURES.md`](file:///c:/f1/02_ORIGINAL_PROJECT_14_FEATURES.md)** | **Phase 1.5: 14-Feature Point Model** | Deterministic regression without Monte Carlo. Exact formulas for the 14 physics features, GroupKFold (k=5) evaluation on unseen circuits, and gain importances. |
-| **[`03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md`](file:///c:/f1/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md)** | **Phase 2: Final Probabilistic Engine** | Full multi-output quantile regression with Pinball Loss, 500-rollout Monte Carlo optimizer, out-lap cold tyre warmup penalty, two-car game-theoretic competitor cover model, 24-circuit Safety Car model, and 15-race backtest validation ($80.0\%$ operational precision). |
+| **[`docs/01_ORIGINAL_PROJECT.md`](file:///c:/f1/docs/01_ORIGINAL_PROJECT.md)** | **Phase 1: Naive Baseline** | Analysis of the initial model, documentation of the 5 fatal leakage flaws (baseline pace leakage, lookahead bias, negative fuel mass, random 80/20 shuffle), and why $R^2=0.97$ was invalid. |
+| **[`docs/02_ORIGINAL_PROJECT_14_FEATURES.md`](file:///c:/f1/docs/02_ORIGINAL_PROJECT_14_FEATURES.md)** | **Phase 1.5: 14-Feature Point Model** | Deterministic regression without Monte Carlo. Exact formulas for the 14 physics features, GroupKFold (k=5) evaluation on unseen circuits, and gain importances. |
+| **[`docs/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md`](file:///c:/f1/docs/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md)** | **Phase 2: Final Probabilistic Engine** | Full multi-output quantile regression with Pinball Loss, 500-rollout Monte Carlo optimizer, out-lap cold tyre warmup penalty, two-car game-theoretic competitor cover model, 24-circuit Safety Car model, and 15-race backtest validation ($80.0\%$ operational precision). |
 
 ---
 

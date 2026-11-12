@@ -33,32 +33,32 @@ import pandas as pd
 # num_corners : total corners per lap
 
 CIRCUIT_PHYSICS: dict[str, dict] = {
-    'Bahrain Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.412, 'num_corners': 15},
-    'Saudi Arabian Grand Prix':     {'abrasion_index': 2, 'circuit_length_km': 6.174, 'num_corners': 27},
-    'Australian Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 5.278, 'num_corners': 16},
-    'Japanese Grand Prix':          {'abrasion_index': 3, 'circuit_length_km': 5.807, 'num_corners': 18},
-    'Chinese Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 5.451, 'num_corners': 16},
-    'Miami Grand Prix':             {'abrasion_index': 3, 'circuit_length_km': 5.412, 'num_corners': 19},
-    'Emilia Romagna Grand Prix':    {'abrasion_index': 2, 'circuit_length_km': 4.909, 'num_corners': 19},
-    'Monaco Grand Prix':            {'abrasion_index': 1, 'circuit_length_km': 3.337, 'num_corners': 19},
-    'Canadian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.361, 'num_corners': 14},
-    'Spanish Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 4.657, 'num_corners': 16},
-    'Austrian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.318, 'num_corners': 10},
-    'British Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.891, 'num_corners': 18},
-    'Hungarian Grand Prix':         {'abrasion_index': 3, 'circuit_length_km': 4.381, 'num_corners': 14},
-    'Belgian Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 7.004, 'num_corners': 19},
-    'Dutch Grand Prix':             {'abrasion_index': 4, 'circuit_length_km': 4.259, 'num_corners': 14},
-    'Italian Grand Prix':           {'abrasion_index': 1, 'circuit_length_km': 5.793, 'num_corners': 11},
-    'Azerbaijan Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 6.003, 'num_corners': 20},
-    'Singapore Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 4.940, 'num_corners': 23},
-    'United States Grand Prix':     {'abrasion_index': 4, 'circuit_length_km': 5.513, 'num_corners': 20},
-    'Mexico City Grand Prix':       {'abrasion_index': 3, 'circuit_length_km': 4.304, 'num_corners': 17},
-    'São Paulo Grand Prix':         {'abrasion_index': 4, 'circuit_length_km': 4.309, 'num_corners': 15},
-    'Las Vegas Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 6.201, 'num_corners': 17},
-    'Qatar Grand Prix':             {'abrasion_index': 5, 'circuit_length_km': 5.419, 'num_corners': 16},
-    'Abu Dhabi Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 5.281, 'num_corners': 16},
+    'Bahrain Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.412, 'num_corners': 15, 'race_laps': 57},
+    'Saudi Arabian Grand Prix':     {'abrasion_index': 2, 'circuit_length_km': 6.174, 'num_corners': 27, 'race_laps': 50},
+    'Australian Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 5.278, 'num_corners': 16, 'race_laps': 58},
+    'Japanese Grand Prix':          {'abrasion_index': 3, 'circuit_length_km': 5.807, 'num_corners': 18, 'race_laps': 53},
+    'Chinese Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 5.451, 'num_corners': 16, 'race_laps': 56},
+    'Miami Grand Prix':             {'abrasion_index': 3, 'circuit_length_km': 5.412, 'num_corners': 19, 'race_laps': 57},
+    'Emilia Romagna Grand Prix':    {'abrasion_index': 2, 'circuit_length_km': 4.909, 'num_corners': 19, 'race_laps': 63},
+    'Monaco Grand Prix':            {'abrasion_index': 1, 'circuit_length_km': 3.337, 'num_corners': 19, 'race_laps': 78},
+    'Canadian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.361, 'num_corners': 14, 'race_laps': 70},
+    'Spanish Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 4.657, 'num_corners': 16, 'race_laps': 66},
+    'Austrian Grand Prix':          {'abrasion_index': 2, 'circuit_length_km': 4.318, 'num_corners': 10, 'race_laps': 71},
+    'British Grand Prix':           {'abrasion_index': 4, 'circuit_length_km': 5.891, 'num_corners': 18, 'race_laps': 52},
+    'Hungarian Grand Prix':         {'abrasion_index': 3, 'circuit_length_km': 4.381, 'num_corners': 14, 'race_laps': 70},
+    'Belgian Grand Prix':           {'abrasion_index': 3, 'circuit_length_km': 7.004, 'num_corners': 19, 'race_laps': 44},
+    'Dutch Grand Prix':             {'abrasion_index': 4, 'circuit_length_km': 4.259, 'num_corners': 14, 'race_laps': 72},
+    'Italian Grand Prix':           {'abrasion_index': 1, 'circuit_length_km': 5.793, 'num_corners': 11, 'race_laps': 53},
+    'Azerbaijan Grand Prix':        {'abrasion_index': 2, 'circuit_length_km': 6.003, 'num_corners': 20, 'race_laps': 51},
+    'Singapore Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 4.940, 'num_corners': 23, 'race_laps': 62},
+    'United States Grand Prix':     {'abrasion_index': 4, 'circuit_length_km': 5.513, 'num_corners': 20, 'race_laps': 56},
+    'Mexico City Grand Prix':       {'abrasion_index': 3, 'circuit_length_km': 4.304, 'num_corners': 17, 'race_laps': 71},
+    'São Paulo Grand Prix':         {'abrasion_index': 4, 'circuit_length_km': 4.309, 'num_corners': 15, 'race_laps': 71},
+    'Las Vegas Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 6.201, 'num_corners': 17, 'race_laps': 50},
+    'Qatar Grand Prix':             {'abrasion_index': 5, 'circuit_length_km': 5.419, 'num_corners': 16, 'race_laps': 57},
+    'Abu Dhabi Grand Prix':         {'abrasion_index': 2, 'circuit_length_km': 5.281, 'num_corners': 16, 'race_laps': 58},
     # Fallback for any unlisted circuit — use global averages
-    '_default':                     {'abrasion_index': 3, 'circuit_length_km': 5.1,   'num_corners': 16},
+    '_default':                     {'abrasion_index': 3, 'circuit_length_km': 5.1,   'num_corners': 16, 'race_laps': 60},
 }
 
 # Physical Pirelli C-Spec Allocations (C1 = 1 [hardest] to C5 = 5 [softest])
@@ -181,34 +181,61 @@ def apply_feature_engineering(df: pd.DataFrame, track_name: str | None = None) -
     compound_map = {'SOFT': 1, 'MEDIUM': 2, 'HARD': 3}
     engineered['compound_encoded'] = engineered['Compound'].map(compound_map).fillna(2)
 
-    # ── 3. Fuel correction (Fix 1: clamp fuel mass to ≥ 2 kg) ───────────────
-    # 110 kg starting fuel, burning ~1.7 kg/lap, correction ~0.03 s per kg.
-    # Without the clamp the correction added time after lap 65 (negative mass).
-    fuel_mass = np.maximum(110.0 - 1.7 * engineered['LapNumber'], 2.0)
+    # ── 3. Fuel correction (circuit-specific burn rate, clamped >= 2 kg) ────
+    # ~105 kg typical starting race fuel burned evenly across scheduled race laps.
+    if track_name is not None:
+        r_laps = _get_circuit_physics(track_name).get('race_laps', 60)
+        burn_per_lap = 105.0 / max(float(r_laps), 1.0)
+    elif 'Track' in engineered.columns:
+        burn_per_lap = engineered['Track'].map(
+            lambda t: 105.0 / max(float(_get_circuit_physics(t).get('race_laps', 60)), 1.0)
+        )
+    else:
+        burn_per_lap = 1.7
+
+    fuel_mass = np.maximum(105.0 - burn_per_lap * engineered['LapNumber'], 2.0)
     fuel_correction = fuel_mass * 0.03
     engineered['fuel_mass'] = fuel_mass
     engineered['fuel_corrected_time'] = engineered['LapTime_s'] - fuel_correction
 
-    # ── 4. Track evolution proxy (Fix 2: causal expanding window) ───────────
-    # Step A: compute per-lap session median across all cars at that lap
-    lap_medians = (
-        engineered
-        .groupby('LapNumber')['LapTime_s']
-        .median()
-        .sort_index()
-    )
-    # Step B: expanding (cumulative) mean of those per-lap medians.
-    # At lap L the value reflects only laps 1..L — no future information.
-    # Using .shift(1) means strictly past laps; keeps lap-1 as NaN → ffill.
-    causal_evo = (
-        lap_medians
-        .expanding()
-        .mean()
-        .shift(1)         # strict past-only: lap L sees average of laps 1..L-1
-        .ffill()          # lap 1 inherits the global session median as seed
-        .bfill()
-    )
-    engineered['track_evolution'] = engineered['LapNumber'].map(causal_evo)
+    # ── 4. Track evolution proxy (Fix 2: causal expanding window per race) ──
+    race_group_cols: list[str] = []
+    if track_name is None:
+        if 'Season' in engineered.columns:
+            race_group_cols.append('Season')
+        if 'Track' in engineered.columns:
+            race_group_cols.append('Track')
+
+    if race_group_cols:
+        lap_medians = (
+            engineered
+            .groupby(race_group_cols + ['LapNumber'])['LapTime_s']
+            .median()
+            .sort_index()
+        )
+        causal_evo = (
+            lap_medians
+            .groupby(level=list(range(len(race_group_cols))))
+            .transform(lambda s: s.expanding().mean().shift(1).ffill().bfill())
+        )
+        evo_key = engineered.set_index(race_group_cols + ['LapNumber']).index
+        engineered['track_evolution'] = evo_key.map(causal_evo).to_numpy()
+    else:
+        lap_medians = (
+            engineered
+            .groupby('LapNumber')['LapTime_s']
+            .median()
+            .sort_index()
+        )
+        causal_evo = (
+            lap_medians
+            .expanding()
+            .mean()
+            .shift(1)
+            .ffill()
+            .bfill()
+        )
+        engineered['track_evolution'] = engineered['LapNumber'].map(causal_evo)
 
     # ── 5. Circuit physics features & compound hardness ─────────────────────
     engineered = apply_circuit_features(engineered, track_name=track_name)

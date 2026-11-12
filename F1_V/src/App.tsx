@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Circuit3DCard } from './components/Circuit3DCard'
 
 const SLIDE_IMAGES = ['/images/1.jpg', '/images/2.jpg', '/images/3.jpg', '/images/4.jpg', '/images/5.jpg', '/images/6.jpg']
 const SLIDE_INTERVAL = 4500
@@ -802,12 +803,12 @@ export default function App() {
                 <div className="vs"><span>HEAD</span><strong>VS</strong><span>HEAD</span></div>
                 <DriverCard driver={b} role="DEFENDER // CHASER" side="b" />
                 <aside className="circuit-card">
-                  <div className="circuit-outline">
-                    <svg viewBox="0 0 160 100">
-                      <path d="M19 72C34 43 61 61 74 32c8-18 32-20 43-5 9 13 26 4 27 23 0 19-22 17-34 25-20 14-38-2-51 8-15 12-45 7-40-11Z" />
-                      <circle cx="20" cy="72" r="4" />
-                    </svg>
-                  </div>
+                  <Circuit3DCard
+                    year={raceData?.year || parseInt(year, 10) || 2023}
+                    race={raceData?.race || selectedRace}
+                    driverAAccent={a.accent}
+                    driverBAccent={b.accent}
+                  />
                   <span className="eyebrow">CIRCUIT PROFILE</span>
                   <h3>{raceData?.circuit || selectedRace}</h3>
                   <p>{raceData?.country || 'Grand Prix Circuit'}</p>

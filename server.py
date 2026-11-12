@@ -317,6 +317,46 @@ def simulate(req: SimulateRequest):
     }
 
 
+@app.get("/api/circuit-geometry")
+def get_circuit_geometry(year: int = 2023, race: str = "Bahrain Grand Prix", max_points: int = 160):
+    """
+    Return normalized 3D track coordinates [[x, z, y], ...] from FastF1 position telemetry
+    for the Interactive 3D Circuit Profile Card.
+    """
+    key = (year, race)
+    session = CACHE_SESSIONS[key]["session"] if key in CACHE_SESSIONS else load_race_session(year, race)
+    if session is None:
+        return {"year": year, "race": race, "source": "fallback", "points": []}
+
+    try:
+        fastest_lap = session.laps.pick_fastest()
+        pos = fastest_lap.get_pos_data() if fastest_lap is not None else None
+        if pos is None or pos.empty or not {"X", "Y"}.issubset(pos.columns):
+            return {"year": year, "race": race, "source": "fallback", "points": []}
+
+        coords = pos[["X", "Y", "Z"]].dropna() if "Z" in pos.columns else pos[["X", "Y"]].dropna().assign(Z=0.0)
+        if len(coords) < 10:
+            return {"year": year, "race": race, "source": "fallback", "points": []}
+
+        step = max(1, len(coords) // max(24, min(max_points, 300)))
+        sampled = coords.iloc[::step].to_numpy(dtype=float)
+
+        center = sampled.mean(axis=0)
+        centered = sampled - center
+        xy_span = float(np.max(np.abs(centered[:, :2]))) or 1.0
+        norm_x = centered[:, 0] / xy_span
+        norm_z = -centered[:, 1] / xy_span  # Flip Y for Three.js ground plane (X, Z)
+        norm_y = (centered[:, 2] / xy_span) * 1.4  # Subtle elevation exaggeration
+
+        points = [
+            [round(float(x), 4), round(float(y), 4), round(float(z), 4)]
+            for x, y, z in zip(norm_x, norm_y, norm_z)
+        ]
+        return {"year": year, "race": race, "source": "fastf1", "points": points}
+    except Exception:
+        return {"year": year, "race": race, "source": "fallback", "points": []}
+
+
 # Mount built React frontend static files if present
 static_dist = Path(__file__).resolve().parent / "F1_V" / "dist"
 if static_dist.exists():

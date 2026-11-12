@@ -4,3 +4,10 @@ pandas
 plotly
 scikit-learn
 numpy
+xgboost
+shap
+joblib
+fastapi
+uvicorn
+pydantic
+pytest

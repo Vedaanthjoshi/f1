@@ -85,6 +85,27 @@ def _predict_quantiles(
     return preds.copy(), preds.copy(), preds.copy()
 
 
+def _sample_correlated_deltas(
+    p5: np.ndarray,
+    p50_eb: np.ndarray,
+    p95: np.ndarray,
+    n_rollouts: int,
+    horizon: int,
+    rng: np.random.Generator,
+    rho: float = 0.75,
+) -> np.ndarray:
+    """
+    Sample stint-correlated degradation deltas of shape (n_rollouts, horizon).
+    Combines a rollout-level latent degradation factor (correlation rho) with
+    per-lap noise so cumulative stint uncertainty does not vanish as 1/sqrt(H).
+    """
+    std = np.maximum((p95 - p5) / (2.0 * 1.645), 1e-4)
+    z_stint = rng.standard_normal((n_rollouts, 1))
+    z_lap = rng.standard_normal((n_rollouts, horizon))
+    z = rho * z_stint + np.sqrt(max(0.0, 1.0 - rho ** 2)) * z_lap
+    return p50_eb[None, :] + std[None, :] * z
+
+
 def run_mc_simulation(
     model: Any,
     current_lap: int,
@@ -152,7 +173,11 @@ def run_mc_simulation(
     horizon_laps = [current_lap + n for n in range(horizon)]
     evos = np.array([evo_map.get(l, last_evo) for l in horizon_laps])
     temps = np.array([temp_map.get(l, last_temp) for l in horizon_laps])
-    fuel_masses = np.array([np.maximum(110.0 - 1.7 * l, 2.0) for l in horizon_laps])
+    track_name_cur = current_state.get('Track', race_name or '_default')
+    circuit_cur = CIRCUIT_PHYSICS.get(track_name_cur, CIRCUIT_PHYSICS['_default'])
+    sched_laps = float(total_laps or circuit_cur.get('race_laps', 60))
+    burn_per_lap = 105.0 / max(sched_laps, 1.0)
+    fuel_masses = np.array([np.maximum(105.0 - burn_per_lap * l, 2.0) for l in horizon_laps])
     fuel_corrections = fuel_masses * 0.03
 
     # --- Stay-Out baseline (Driver A on current worn tyre progression) ---
@@ -163,8 +188,7 @@ def run_mc_simulation(
     )
     so_p5, so_p50, so_p95 = _predict_quantiles(model, so_df)
     so_p50_eb = apply_race_eb(so_p50, race_alpha, race_bias)
-    so_std = np.maximum((so_p95 - so_p5) / (2 * 1.645), 1e-4)
-    so_delta_samples = rng.normal(loc=so_p50_eb, scale=so_std, size=(n_rollouts, horizon))
+    so_delta_samples = _sample_correlated_deltas(so_p5, so_p50_eb, so_p95, n_rollouts, horizon, rng)
     so_lap_times = current_state['baseline_pace'] + so_delta_samples + fuel_corrections
 
     # --- Defender stay-out baseline (use real defender pace/tyre state when available) ---
@@ -176,8 +200,7 @@ def run_mc_simulation(
         )
         d_p5, d_p50, d_p95 = _predict_quantiles(model, def_df)
         d_p50_eb = apply_race_eb(d_p50, race_alpha, race_bias)
-        d_std = np.maximum((d_p95 - d_p5) / (2 * 1.645), 1e-4)
-        def_delta_samples = rng.normal(loc=d_p50_eb, scale=d_std, size=(n_rollouts, horizon))
+        def_delta_samples = _sample_correlated_deltas(d_p5, d_p50_eb, d_p95, n_rollouts, horizon, rng)
         def_bp_shrunk = current_state['baseline_pace'] + float(
             np.clip(defender_state['baseline_pace'] - current_state['baseline_pace'], -0.50, 0.50)
         )
@@ -250,10 +273,9 @@ def run_mc_simulation(
         )
         pit_p5, pit_p50, pit_p95 = _predict_quantiles(model, pit_df)
         pit_p50_eb = apply_race_eb(pit_p50, race_alpha, race_bias)
-        pit_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-4)
 
         att_comp_shift = _compound_offset(att_ref_comp, int(strat_compound))
-        pit_delta_samples = rng.normal(loc=pit_p50_eb, scale=pit_std, size=(n_rollouts, horizon))
+        pit_delta_samples = _sample_correlated_deltas(pit_p5, pit_p50_eb, pit_p95, n_rollouts, horizon, rng)
         pit_driving_lap_times = current_state['baseline_pace'] + att_comp_shift + pit_delta_samples + fuel_corrections
         pit_driving_lap_times[:, :pit_offset + 1] = so_lap_times[:, :pit_offset + 1]
 
@@ -265,13 +287,9 @@ def run_mc_simulation(
             pit_loss_delta,
         )
 
-        # Compound- & temperature-aware cold tyre out-lap warmup penalty
-        strat_c_hard = float(alloc_cur.get(_comp_key_map.get(int(strat_compound), 'MEDIUM'), 3))
-        out_temp = float(temps[min(pit_offset + 1, horizon - 1)])
-        OUT_LAP_PENALTY_S = float(np.clip(
-            1.5 * (strat_c_hard / 3.0) * np.clip(1.0 - 0.012 * (out_temp - 30.0), 0.80, 1.25),
-            0.8, 2.8,
-        ))
+        # G4 2-lap relative pit_loss_delta already includes pit-lane transit, stationary time,
+        # and out-lap tyre warmup, so additional OUT_LAP_PENALTY_S is 0.0 to avoid double-counting.
+        OUT_LAP_PENALTY_S = 0.0
 
         # Age-indexed fresh-tyre predictions (`tyre_age = 1..horizon`) for defender cover reset
         def_cover_ages = np.arange(1, horizon + 1, dtype=float)
@@ -282,8 +300,7 @@ def run_mc_simulation(
         )
         def_p5, def_cover_p50, def_p95 = _predict_quantiles(model, def_cover_df)
         def_cover_p50_eb = apply_race_eb(def_cover_p50, race_alpha, race_bias)
-        def_cover_std = np.maximum((def_p95 - def_p5) / (2 * 1.645), 1e-4)
-        def_cover_delta_samples = rng.normal(loc=def_cover_p50_eb, scale=def_cover_std, size=(n_rollouts, horizon))
+        def_cover_delta_samples = _sample_correlated_deltas(def_p5, def_cover_p50_eb, def_p95, n_rollouts, horizon, rng)
         def_comp_shift = _compound_offset(def_ref_comp, int(strat_compound))
         defender_fresh_lap_times = def_cover_base_pace + def_comp_shift + def_cover_delta_samples
 
@@ -303,6 +320,7 @@ def run_mc_simulation(
                 defender_fresh_lap_times=defender_fresh_lap_times,
                 fuel_corrections=fuel_corrections,
                 overtaking_difficulty=diff,
+                sc_mask=sc_on_pit_lap,
             )
         else:
             # Single-car stint pace optimization against staying out forever
@@ -334,6 +352,7 @@ def run_mc_simulation(
                 defender_fresh_lap_times=defender_fresh_lap_times,
                 fuel_corrections=fuel_corrections,
                 overtaking_difficulty=diff,
+                sc_mask=np.ones(n_rollouts, dtype=bool),
             )
         else:
             full_pit_times_sc = pit_driving_lap_times.copy()

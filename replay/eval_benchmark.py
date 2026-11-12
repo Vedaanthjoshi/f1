@@ -45,10 +45,9 @@ from engine.monte_carlo import run_mc_simulation
 from replay.whatif import _controlled_linear_increment, prepare_race_data, run_whatif
 from backtester import HISTORICAL_UNDERCUTS, evaluate_single_undercut
 
-MINED_DUELS_PATH = os.path.join(
-    os.path.expanduser("~"),
-    ".gemini", "antigravity", "brain",
-    "3b7a3832-6965-4b97-9f35-57c45cca9308", "scratch", "mined_duels.csv",
+MINED_DUELS_PATH = os.environ.get(
+    "MINED_DUELS_PATH",
+    os.path.join("data", "mined_duels.csv"),
 )
 
 

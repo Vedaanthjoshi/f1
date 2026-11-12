@@ -13,6 +13,7 @@ import pandas as pd
 from pipeline import fetch_season_schedule, load_race_session, process_telemetry_pipeline
 from engine import run_mc_simulation, COMPOUND_MAP
 from ml import load_global_model, compute_shap_explanation
+from ml.trainer import estimate_causal_race_eb
 
 # UI components & styling
 from ui.styles import inject_custom_css
@@ -143,6 +144,20 @@ def render_strategy_dashboard():
         "Driver":           driver_a,
     }
     track_env = ml_data[["LapNumber", "track_evolution", "TrackTemp"]].drop_duplicates("LapNumber")
+    past_laps = ml_data[ml_data["LapNumber"] <= sim_lap]
+    race_alpha, race_bias = estimate_causal_race_eb(past_laps, model, features)
+
+    def_state_df = ml_data[(ml_data["Driver"] == driver_b) & (ml_data["LapNumber"] <= sim_lap)].sort_values("LapNumber")
+    defender_state = None
+    if not def_state_df.empty and driver_b != driver_a:
+        d_last = def_state_df.iloc[-1]
+        defender_state = {
+            "tyre_age":         float(d_last["tyre_age"]),
+            "compound_encoded": int(d_last["compound_encoded"]),
+            "baseline_pace":    float(d_last["baseline_pace"]),
+            "Track":            st.session_state["race"],
+            "Driver":           driver_b,
+        }
 
     # Run Monte Carlo simulation across 6 strategies
     with st.spinner(f"Running {n_rollouts:,} Monte Carlo rollouts across 6 strategies..."):
@@ -157,6 +172,9 @@ def render_strategy_dashboard():
             feature_cols=features,
             rival_gap_s=rival_gap_s,
             total_laps=max_lap,
+            race_alpha=race_alpha,
+            race_bias=race_bias,
+            defender_state=defender_state,
         )
 
     # Strategy Table

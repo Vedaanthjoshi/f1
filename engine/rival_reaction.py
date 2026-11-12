@@ -83,11 +83,12 @@ def simulate_undercut_differential(
     cover_rate: float,
     n_rollouts: int,
     rng: np.random.Generator,
-    out_lap_penalty: float = 1.5,
+    out_lap_penalty: float = 0.0,
     defender_fresh_lap_times: np.ndarray | None = None,
     fuel_corrections: np.ndarray | None = None,
     overtaking_difficulty: str = "Medium",
-    push_bonus_per_lap: float = 0.90,
+    push_bonus_per_lap: float = 0.35,
+    sc_mask: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Vectorized two-car undercut differential with multi-lag defender cover reactions (+1, +2, +4),
@@ -132,21 +133,28 @@ def simulate_undercut_differential(
     dirty_air_s = _DIRTY_AIR_PENALTY.get(overtaking_difficulty, 0.55)
     overtake_thresh_s = _OVERTAKE_THRESHOLD.get(overtaking_difficulty, 1.00)
 
+    is_sc = np.asarray(sc_mask, dtype=bool) if sc_mask is not None else np.zeros(n_rollouts, dtype=bool)
     cum = np.full(n_rollouts, -init_gap, dtype=float)
     for h in range(horizon):
         a_l = att[:, h].copy()
         d_l = df_t[:, h].copy()
 
-        # Free-air undercut push vs defender in-lap / worn-tyre management while defender stays out
-        in_window = (h >= pit_offset + 1) & (h <= def_pits)
+        # Under a Safety Car deployed on the pit lap, gaps compress and free-air undercut push disappears
+        sc_active_lap = is_sc & (h >= pit_offset) & (h <= pit_offset + 2)
+        if np.any(sc_active_lap) and h == pit_offset:
+            cum = np.where(sc_active_lap, np.clip(cum, -0.5, 0.5), cum)
+
+        # Free-air undercut push on clean flying push laps (excludes cold out-lap and SC laps)
+        in_window = (h > pit_offset + 1) & (h <= def_pits) & (~sc_active_lap)
         a_l[in_window] -= push_bonus_per_lap
 
-        # Symmetric dirty-air wake (when trailing car is inside 1.5s wake on non-pit/out laps)
+        # Symmetric dirty-air wake (when trailing car is inside 1.5s wake on non-pit/out green laps)
         is_racing_lap = (
             (h != pit_offset)
             & (h != pit_offset + 1)
             & (h != def_pits)
             & (h != def_pits + 1)
+            & (~sc_active_lap)
         )
         att_in_wake = is_racing_lap & (cum < 0.0) & (-cum <= 1.5)
         def_in_wake = is_racing_lap & (cum > 0.0) & (cum <= 1.5)
@@ -156,8 +164,8 @@ def simulate_undercut_differential(
         new_cum = cum + (d_l - a_l)
 
         # Symmetric overtaking pace threshold: cannot overtake on track unless pace delta >= threshold
-        att_blocked = (cum < 0.0) & (new_cum > 0.0) & (h != def_pits) & ((d_l - a_l) < overtake_thresh_s)
-        def_blocked = (cum > 0.0) & (new_cum < 0.0) & (h != pit_offset) & ((a_l - d_l) < overtake_thresh_s)
+        att_blocked = (~sc_active_lap) & (cum < 0.0) & (new_cum > 0.0) & (h != def_pits) & ((d_l - a_l) < overtake_thresh_s)
+        def_blocked = (~sc_active_lap) & (cum > 0.0) & (new_cum < 0.0) & (h != pit_offset) & ((a_l - d_l) < overtake_thresh_s)
         new_cum = np.where(att_blocked, -0.35, new_cum)
         new_cum = np.where(def_blocked, +0.35, new_cum)
         cum = new_cum

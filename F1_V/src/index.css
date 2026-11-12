@@ -349,6 +349,9 @@ h1 span { color: transparent; -webkit-text-stroke: 1px #607784; }
 .vs span { color: #3d4c56; font: 6px 'JetBrains Mono'; writing-mode: vertical-rl; letter-spacing: .18em; }
 .circuit-card { padding: 17px; border-left: 0; }
 .circuit-outline { height: 90px; display: grid; place-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--line); }
+.circuit-3d-wrap { height: 145px; position: relative; overflow: hidden; display: block; cursor: grab; background: radial-gradient(circle at 50% 60%, rgba(32, 217, 239, 0.08), transparent 70%); }
+.circuit-3d-wrap:active { cursor: grabbing; }
+.circuit-3d-hint { position: absolute; right: 6px; bottom: 6px; font: 700 8px 'JetBrains Mono', monospace; letter-spacing: .09em; color: var(--muted); background: rgba(6, 9, 14, 0.78); border: 1px solid var(--line); padding: 2px 6px; pointer-events: none; }
 .circuit-outline svg { width: 150px; height: 90px; fill: none; stroke: var(--cyan); stroke-width: 2; filter: drop-shadow(0 0 7px rgba(32,217,239,.25)); }
 .circuit-outline circle { fill: var(--red); stroke: none; }
 .circuit-card h3 { margin: 6px 0 2px; font-size: 19px; text-transform: uppercase; }.circuit-card p { color: var(--muted); font-size: 12px; }

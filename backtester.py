@@ -187,15 +187,19 @@ def evaluate_single_undercut(
             print(f"    ⚠ SKIP — {e}")
         return result_base
 
-    # ── 2. Run Pipeline Data Prep ─────────────────────────────────────────────
+    # Evaluate at the lap just BEFORE the pit stop (strictly causal: no future laps)
+    eval_lap = max(pit_lap - 1, 1)
+
+    # ── 2. Run Pipeline Data Prep (Causal: LapNumber <= eval_lap only) ────────
     try:
         from pipeline.ingestion import clean_lap_data, merge_weather_data
-        clean_laps = clean_lap_data(session.laps)
+        causal_laps = session.laps[session.laps['LapNumber'] <= eval_lap].copy()
+        clean_laps = clean_lap_data(causal_laps)
         final_laps = merge_weather_data(clean_laps, session.weather_data)
         engineered = apply_feature_engineering(final_laps, track_name=race)
         ml_data    = prepare_ml_data(engineered)
         try:
-            pit_loss = calculate_pit_loss(session)
+            pit_loss = calculate_pit_loss(session, max_lap=eval_lap)
         except Exception:
             pit_loss = PIT_LOSS_FALLBACK
     except Exception as e:
@@ -204,12 +208,7 @@ def evaluate_single_undercut(
             print(f"    ⚠ SKIP — Pipeline error: {e}")
         return result_base
 
-    # Evaluate at the lap just BEFORE the pit stop
-    eval_lap = max(pit_lap - 1, 1)
-
-    driver_laps = ml_data[
-        (ml_data['Driver'] == driver) & (ml_data['LapNumber'] <= eval_lap)
-    ].sort_values('LapNumber')
+    driver_laps = ml_data[ml_data['Driver'] == driver].sort_values('LapNumber')
 
     if driver_laps.empty:
         result_base['load_error'] = f"No data for {driver} at Lap {eval_lap}"
@@ -236,8 +235,8 @@ def evaluate_single_undercut(
     # ── 4. Run Vectorized Monte Carlo Strategy Optimization (500 Rollouts) ────
     model = model_meta['model']
     features = model_meta.get('features', FEATURE_COLS_14)
-    total_laps = int(ml_data['LapNumber'].max()) if not ml_data.empty else None
-    past_laps = ml_data[ml_data['LapNumber'] <= eval_lap]
+    total_laps = int(CIRCUIT_PHYSICS.get(race, CIRCUIT_PHYSICS['_default']).get('race_laps', 60))
+    past_laps = ml_data
     race_alpha, race_bias = estimate_causal_race_eb(past_laps, model, features)
 
     rival_name = event.get('rival')
@@ -278,11 +277,8 @@ def evaluate_single_undercut(
     p_pit         = best_strat['p_net_gain']
     expected_gain = best_strat['expected_gain_s']
 
-    # Undercut decision logic:
-    # Monaco is an overtakeless street circuit where undercuts consistently fail.
-    # On other circuits, open pit window if P(net gain) >= 50% and expected gain > 0.
-    is_monaco = "Monaco" in race
-    window_open = (p_pit >= 0.50) and (expected_gain > 0.0) and not is_monaco
+    # Undercut decision logic: pure probabilistic model output (no hardcoded circuit overrides).
+    window_open = (p_pit >= 0.50) and (expected_gain > 0.0)
 
     recommendation = 'PIT' if window_open else 'STAY_OUT'
     correct = (worked and recommendation == 'PIT') or \

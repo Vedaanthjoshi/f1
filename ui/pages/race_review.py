@@ -11,7 +11,7 @@ Implements Phase 2 & Phase 3 of the Post-Race Strategy Review:
 
 from __future__ import annotations
 
-import os
+from html import escape
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -27,6 +27,8 @@ from replay.whatif import (
     SHIFT_MAX,
 )
 from pipeline import fetch_season_schedule
+from ui.charts.styling import style_chart
+from ui.metadata import driver_profile
 
 # All 25 circuits present in data/historical_laps.csv (2022–2025)
 TRAINING_SET_RACES = {
@@ -109,53 +111,101 @@ def load_cached_race_data(year: int, race_name: str):
     return prepare_race_data(year, race_name, include_session=False)
 
 
+def _stint_pill_html(compound: str, laps_count: int) -> str:
+    """Render a compact Pirelli compound pill + stint lap count."""
+    comp = str(compound or "").upper()
+    if "SOFT" in comp:
+        cls, letter = "pirelli-soft", "S"
+    elif "MEDIUM" in comp:
+        cls, letter = "pirelli-medium", "M"
+    elif "HARD" in comp:
+        cls, letter = "pirelli-hard", "H"
+    elif "INTER" in comp:
+        cls, letter = "pirelli-inter", "I"
+    elif "WET" in comp:
+        cls, letter = "pirelli-wet", "W"
+    else:
+        cls, letter = "pirelli-stay", "?"
+    return (
+        f'<span class="f1-stint-chip">'
+        f'<span class="pirelli-pill {cls}">{letter}</span>'
+        f'{laps_count}L'
+        f'</span>'
+    )
+
+
+def _render_driver_banner(
+    selected_driver: str,
+    driver_laps: pd.DataFrame,
+    final_pos: int,
+    pit_laps: list[int],
+) -> None:
+    """Render a compact F1 timing-tower driver summary header with stint pills."""
+    profile = driver_profile(selected_driver)
+    drv = profile["driver"]
+    team = profile["team"]
+    accent = team.get("accentColor", "#E10600")
+    number = f"#{drv['number']}" if drv.get("number") else selected_driver
+    full_name = drv.get("name", selected_driver)
+    team_name = team.get("name", "F1 Team")
+
+    stint_chips: list[str] = []
+    if "Stint" in driver_laps.columns:
+        for _, grp in driver_laps.groupby("Stint", sort=True):
+            comp = grp["Compound"].dropna().iloc[0] if "Compound" in grp.columns and not grp["Compound"].dropna().empty else "HARD"
+            stint_chips.append(_stint_pill_html(str(comp), len(grp)))
+
+    stints_html = '<span class="f1-stint-arrow">&rarr;</span>'.join(stint_chips)
+    stops_text = ", ".join(f"L{p}" for p in pit_laps) if pit_laps else "No Stops"
+
+    st.markdown(
+        f"""
+        <div class="f1-driver-banner" style="--accent: {escape(accent)};">
+            <div class="f1-driver-banner-left">
+                <div class="f1-driver-banner-num">{escape(number)}</div>
+                <div>
+                    <div class="f1-driver-banner-name">{escape(selected_driver)} &middot; {escape(full_name)}</div>
+                    <div class="f1-driver-banner-sub">{escape(team_name)} &nbsp;&bull;&nbsp; Classified P{final_pos} &nbsp;&bull;&nbsp; Pit Laps: {escape(stops_text)}</div>
+                </div>
+            </div>
+            <div class="f1-stint-chain">{stints_html}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_race_review():
     """Main render function for the Post-Race Review tab."""
-    st.markdown("## 📋 Post-Race Strategy Review & Counterfactual Engine")
     st.markdown(
-        "Reconstruct actual race telemetry, evaluate pit-stop timing regret, run Monte Carlo what-ifs "
-        "with rival cover & dirty-air reactions, and inspect model-predicted vs actual tyre degradation."
+        """
+        <div class="f1-setup-header" style="margin-top: 0.4rem;">
+            <span class="f1-setup-kicker">&#9635; Counterfactual Telemetry &nbsp;//&nbsp; What-If Engine</span>
+            <h2 class="f1-setup-title">Post-Race Strategy Review</h2>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     # -----------------------------------------------------------------------
-    # 1. Race & Driver Selectors (All Cached Seasons 2019–2025)
+    # 1. Unified Race & Reaction Setup Card
     # -----------------------------------------------------------------------
-    col_yr, col_gp, col_mode = st.columns([1, 2, 2])
-    available_seasons = [2025, 2024, 2023, 2022, 2021, 2020, 2019]
-    year = col_yr.selectbox("Season", available_seasons, index=2, key="review_year")
+    with st.container(border=True):
+        col_yr, col_gp, col_mode = st.columns([1, 2, 2])
+        available_seasons = [2025, 2024, 2023, 2022, 2021, 2020, 2019]
+        year = col_yr.selectbox("Season", available_seasons, index=2, key="review_year")
 
-    races_available = load_cached_schedule(year)
-    default_gp_idx = races_available.index("Bahrain Grand Prix") if "Bahrain Grand Prix" in races_available else 0
-    gp_name = col_gp.selectbox("Grand Prix", races_available, index=default_gp_idx, key="review_gp")
+        races_available = load_cached_schedule(year)
+        default_gp_idx = races_available.index("Bahrain Grand Prix") if "Bahrain Grand Prix" in races_available else 0
+        gp_name = col_gp.selectbox("Grand Prix", races_available, index=default_gp_idx, key="review_gp")
 
-    rival_mode = col_mode.selectbox(
-        "Rival Reaction Model",
-        list(RIVAL_MODES.keys()),
-        index=0,
-        format_func=lambda k: RIVAL_MODES[k],
-        key="review_rival_mode",
-    )
-
-    # Honesty Banner
-    is_bahrain = "bahrain" in gp_name.lower()
-    if is_bahrain:
-        st.info(
-            "🛡️ **Leave-One-Race-Out Model Active:** All Bahrain GPs were strictly removed from training data "
-            "(`models/loro_bahrain.joblib`). Pit loss & residuals are computed directly from this race."
+        rival_mode = col_mode.selectbox(
+            "Rival Reaction Model",
+            list(RIVAL_MODES.keys()),
+            index=0,
+            format_func=lambda k: RIVAL_MODES[k],
+            key="review_rival_mode",
         )
-    elif gp_name in TRAINING_SET_RACES and year in (2022, 2023, 2024, 2025):
-        st.warning(
-            "⚠️ **In-Sample Sanity Check:** The global model saw 2022–2025 laps from this circuit during training. "
-            "Pit loss, circuit physics, and residuals are computed dynamically for this race; "
-            "monotonic wear constraints prevent curve memorization."
-        )
-
-    if rival_mode == "fixed":
-        st.caption("ℹ️ Strategy Modeling Assumption: **Rivals held fixed (stopwatch baseline), no traffic or reaction model.**")
-    elif rival_mode == "cover":
-        st.caption("ℹ️ Strategy Modeling Assumption: **Threatened rivals cover undercuts (+1 lap pit reaction); no dirty-air penalty.**")
-    else:
-        st.caption("ℹ️ Strategy Modeling Assumption: **Threatened rivals cover undercuts (+1 lap) + dirty-air wake penalty in traffic.**")
 
     # Load Race Data
     with st.spinner(f"Loading telemetry & replay table for {year} {gp_name}..."):
@@ -177,29 +227,57 @@ def render_race_review():
     overtaking_difficulty = race_data.get("overtaking_difficulty", "Medium")
     race_deg_stats = race_data.get("race_deg_stats", {})
 
+    # Compact single-row status strip (replaces stacked warning/info/caption walls)
+    is_bahrain = "bahrain" in gp_name.lower()
+    if is_bahrain:
+        val_pill = '<span class="f1-status-pill is-loro">Validation: <strong>LORO (Out-of-Sample)</strong></span>'
+    elif gp_name in TRAINING_SET_RACES and year in (2022, 2023, 2024, 2025):
+        val_pill = '<span class="f1-status-pill is-insample">Validation: <strong>In-Sample (Monotonic Constrained)</strong></span>'
+    else:
+        val_pill = '<span class="f1-status-pill is-loro">Validation: <strong>Out-of-Sample Circuit</strong></span>'
+
+    mode_short = {
+        "cover_traffic": "Cover (+1L) + Dirty Air",
+        "cover": "Cover (+1L) Only",
+        "fixed": "Fixed Rivals (Stopwatch)",
+    }.get(rival_mode, rival_mode)
+    green_med = f"{np.median(pit_loss_green):.1f}s" if len(pit_loss_green) else "—"
+    sc_cnt = len(pit_loss_neutralized)
+
+    st.markdown(
+        f"""
+        <div class="f1-status-bar">
+            {val_pill}
+            <span class="f1-status-pill is-mode">Rivals: <strong>{escape(mode_short)}</strong></span>
+            <span class="f1-status-pill is-pit">Pit Pool: <strong>{green_med} green ({len(pit_loss_green)}) &middot; {sc_cnt} SC/VSC</strong></span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     drivers = sorted(replay_table["Driver"].unique().tolist())
     def_driver_idx = drivers.index("VER") if "VER" in drivers else 0
-    selected_driver = st.selectbox("Select Driver to Review", drivers, index=def_driver_idx, key="review_driver")
+    drv_col, _ = st.columns([1, 3])
+    selected_driver = drv_col.selectbox("Driver Under Review", drivers, index=def_driver_idx, key="review_driver")
 
     driver_laps = replay_table[replay_table["Driver"] == selected_driver].sort_values("LapNumber").reset_index(drop=True)
     if driver_laps.empty:
         st.warning(f"No laps recorded for driver {selected_driver}.")
         return
 
-    # Driver Stops
+    # Driver Stops & KPIs
     driver_stops = driver_laps[driver_laps["is_in_lap"] == True]
     pit_laps = driver_stops["LapNumber"].astype(int).tolist()
-
-    # Driver KPI Header
     final_pos = int(driver_laps["Position"].dropna().iloc[-1]) if not driver_laps["Position"].dropna().empty else 20
-    total_time_m = (driver_laps["Time_s"].dropna().iloc[-1] / 60.0) if not driver_laps["Time_s"].dropna().empty else 0.0
     stints_run = int(driver_laps["Stint"].dropna().max()) if not driver_laps["Stint"].dropna().empty else 1
+
+    _render_driver_banner(selected_driver, driver_laps, final_pos, pit_laps)
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Final Position", f"P{final_pos}")
-    m2.metric("Total Laps Completed", f"{len(driver_laps)}")
-    m3.metric("Pit Stops Completed", f"{len(pit_laps)}")
-    m4.metric("Stints", f"{stints_run}")
+    m2.metric("Laps Completed", f"{len(driver_laps)}")
+    m3.metric("Pit Stops", f"{len(pit_laps)}")
+    m4.metric("Stints Run", f"{stints_run}")
 
     st.divider()
 
@@ -207,31 +285,28 @@ def render_race_review():
     # Sub-Tabs for Review
     # -----------------------------------------------------------------------
     tab_regret, tab_whatif, tab_replay, tab_deg = st.tabs([
-        "🔍 Pit Decision Regret Scan",
-        "🎲 Monte Carlo What-If Simulator",
-        "📊 Lap-by-Lap Replay Table",
-        "📈 Tyre Degradation (Pred vs Actual)",
+        "Pit Regret Scan",
+        "Monte Carlo What-If",
+        "Lap-by-Lap Replay",
+        "Tyre Degradation",
     ])
 
     # -----------------------------------------------------------------------
     # TAB 1: Regret Scan
     # -----------------------------------------------------------------------
     with tab_regret:
-        st.subheader(f"Pit Stop Regret Analysis ({SHIFT_MIN} to +{SHIFT_MAX} Laps)")
-        st.markdown(
-            f"For each actual pit stop, evaluate counterfactual shifts between **{SHIFT_MIN} laps earlier** and **+{SHIFT_MAX} laps later** "
-            f"under **{RIVAL_MODES[rival_mode]}**. "
-            "Any shift whose 90% confidence interval covers 0.0s is labeled **not distinguishable from noise**."
+        st.caption(
+            f"Evaluates counterfactual pit shifts ({SHIFT_MIN} to +{SHIFT_MAX} laps) under {RIVAL_MODES[rival_mode]}. "
+            "Shifts whose 90% CI spans 0.0s are marked indistinguishable from noise."
         )
 
         if not pit_laps:
             st.info(f"{selected_driver} did not make any pit stops during this race.")
         else:
             stop_labels = [f"Stop {i+1} (Lap {p})" for i, p in enumerate(pit_laps)]
-            chosen_stop_idx = st.selectbox("Select Pit Stop to Scan", range(len(pit_laps)), format_func=lambda i: stop_labels[i])
-
+            sel_col, _ = st.columns([1, 2])
+            chosen_stop_idx = sel_col.selectbox("Pit Stop to Scan", range(len(pit_laps)), format_func=lambda i: stop_labels[i])
             actual_stop_lap = pit_laps[chosen_stop_idx]
-            st.write(f"Analyzing **Stop {chosen_stop_idx + 1}** taken at **Lap {actual_stop_lap}**")
 
             with st.spinner("Executing 500-rollout Monte Carlo regret scan across counterfactual shifts..."):
                 scan_df = regret_scan(
@@ -254,98 +329,147 @@ def render_race_review():
             if scan_df.empty:
                 st.warning("No feasible shifts found for this stop.")
             else:
-                # Add human readable labels
                 scan_df["Status"] = scan_df.apply(
                     lambda r: "Not distinguishable from noise" if r["is_noise"]
                     else ("Faster (Advantage)" if r["expected_time_delta"] < 0 else "Slower (Loss)"),
                     axis=1,
                 )
                 scan_df["New In-Lap"] = actual_stop_lap + scan_df["shift"]
+                scan_df = scan_df[scan_df["New In-Lap"] >= 2].copy()
 
-                # Regret Chart
-                colors = scan_df["Status"].map({
-                    "Faster (Advantage)": "#00D2BE",
-                    "Not distinguishable from noise": "#9E9E9E",
-                    "Slower (Loss)": "#E10600",
-                })
+                if scan_df.empty:
+                    st.warning("No feasible positive pit laps found for this stop.")
+                else:
+                    # Highlight optimal shift in 3 clean KPI cards
+                    best_row = scan_df.loc[scan_df["expected_time_delta"].idxmin()]
+                    best_shift = int(best_row["shift"])
+                    best_delta = float(best_row["expected_time_delta"])
+                    best_lap = int(best_row["New In-Lap"])
 
-                fig_regret = go.Figure()
-                fig_regret.add_trace(go.Bar(
-                    x=scan_df["shift"],
-                    y=scan_df["expected_time_delta"],
-                    error_y=dict(
-                        type="data",
-                        symmetric=False,
-                        array=scan_df["p95"] - scan_df["expected_time_delta"],
-                        arrayminus=scan_df["expected_time_delta"] - scan_df["p05"],
-                        color="#B0BEC5",
-                    ),
-                    marker_color=colors,
-                    name="Expected Delta",
-                    hovertemplate="Shift: %{x:+d} laps<br>New Lap: %{customdata[0]}<br>Time Delta: %{y:+.2f} s<br>Status: %{customdata[1]}<extra></extra>",
-                    customdata=scan_df[["New In-Lap", "Status"]].values,
-                ))
-                fig_regret.add_hline(y=0.0, line_dash="dash", line_color="#FFFFFF", opacity=0.7)
-                fig_regret.update_layout(
-                    title=f"Pit Regret Curve — Stop {chosen_stop_idx + 1} (Actual: Lap {actual_stop_lap})",
-                    xaxis_title="Pit Stop Shift (Laps: Earlier [-] / Later [+])",
-                    yaxis_title="Expected Race Time Delta (s) [Negative = Faster]",
-                    template="plotly_dark",
-                    height=450,
-                )
-                st.plotly_chart(fig_regret, width="stretch")
+                    r_k1, r_k2, r_k3 = st.columns(3)
+                    r_k1.metric("Actual Pit Lap", f"Lap {actual_stop_lap}", delta=f"Stop {chosen_stop_idx + 1}")
+                    r_k2.metric("Optimal Pit Lap", f"Lap {best_lap}", delta=f"{best_shift:+d} laps")
+                    r_k3.metric(
+                        "Best Expected Delta",
+                        f"{best_delta:+.2f} s",
+                        delta="Noise / Neutral" if best_row["is_noise"] else ("Net Gain" if best_delta < 0 else "Net Loss"),
+                        delta_color="normal" if best_delta < 0 else "inverse",
+                    )
 
-                # Regret Summary Table
-                display_cols = [
-                    "shift", "New In-Lap", "expected_time_delta", "p05", "p95",
-                    "p_position_improves", "n_rival_reactions", "dirty_air_laps",
-                    "blocked_laps", "is_extrapolated", "robustness", "Status",
-                ]
-                available_disp = [c for c in display_cols if c in scan_df.columns]
-                st.dataframe(
-                    scan_df[available_disp].rename(columns={
-                        "shift": "Shift (Laps)",
-                        "expected_time_delta": "Exp. Delta (s)",
-                        "p05": "5th Pct (s)",
-                        "p95": "95th Pct (s)",
-                        "p_position_improves": "P(Pos Improves)",
-                        "n_rival_reactions": "Rivals Reacted",
-                        "dirty_air_laps": "Dirty Air Laps",
-                        "blocked_laps": "Blocked Laps",
-                        "is_extrapolated": "Extrapolated",
-                        "robustness": "Robustness",
-                    }).style.format({
-                        "Exp. Delta (s)": "{:+.2f}",
-                        "5th Pct (s)": "{:+.2f}",
-                        "95th Pct (s)": "{:+.2f}",
-                        "P(Pos Improves)": "{:.1%}",
-                        "Dirty Air Laps": "{:.1f}",
-                        "Blocked Laps": "{:.1f}",
-                    }),
-                    width="stretch",
-                )
+                    colors = scan_df["Status"].map({
+                        "Faster (Advantage)": "#3ECF8E",
+                        "Not distinguishable from noise": "#7A8BA0",
+                        "Slower (Loss)": "#E10600",
+                    })
+
+                    fig_regret = go.Figure()
+                    fig_regret.add_trace(go.Bar(
+                        x=scan_df["New In-Lap"],
+                        y=scan_df["expected_time_delta"],
+                        error_y=dict(
+                            type="data",
+                            symmetric=False,
+                            array=scan_df["p95"] - scan_df["expected_time_delta"],
+                            arrayminus=scan_df["expected_time_delta"] - scan_df["p05"],
+                            color="rgba(170, 184, 200, 0.55)",
+                        ),
+                        marker_color=colors,
+                        name="Expected Delta",
+                        hovertemplate="Pit Lap: %{x}<br>Shift: %{customdata[0]:+d} laps<br>Time Delta: %{y:+.2f} s<br>Status: %{customdata[1]}<extra></extra>",
+                        customdata=scan_df[["shift", "Status"]].values,
+                    ))
+                    fig_regret.add_hline(y=0.0, line_dash="dash", line_color="rgba(255,255,255,0.5)")
+                    fig_regret.add_vline(
+                        x=actual_stop_lap,
+                        line_dash="dot",
+                        line_color="#FFFFFF",
+                        annotation_text=f"Actual L{actual_stop_lap}",
+                    )
+                    fig_regret.update_layout(
+                        xaxis_title="Counterfactual Pit Lap (Positive Race Laps)",
+                        yaxis_title="Expected Time Delta (s) [Negative = Faster]",
+                        xaxis=dict(dtick=1),
+                        height=430,
+                    )
+                    st.plotly_chart(
+                        style_chart(fig_regret, f"Pit Regret Curve — Stop {chosen_stop_idx + 1} (Actual: Lap {actual_stop_lap})"),
+                        width="stretch",
+                    )
+
+                    display_cols = [
+                        "New In-Lap", "shift", "expected_time_delta", "p05", "p95",
+                        "p_position_improves", "n_rival_reactions", "dirty_air_laps",
+                        "blocked_laps", "is_extrapolated", "robustness", "Status",
+                    ]
+                    available_disp = [c for c in display_cols if c in scan_df.columns]
+                    with st.expander("Detailed Shift Matrix & Robustness Metrics", expanded=False):
+                        st.dataframe(
+                            scan_df[available_disp].rename(columns={
+                                "shift": "Shift (Laps)",
+                                "expected_time_delta": "Exp. Delta (s)",
+                                "p05": "5th Pct (s)",
+                                "p95": "95th Pct (s)",
+                                "p_position_improves": "P(Pos Improves)",
+                                "n_rival_reactions": "Rivals Reacted",
+                                "dirty_air_laps": "Dirty Air Laps",
+                                "blocked_laps": "Blocked Laps",
+                                "is_extrapolated": "Extrapolated",
+                                "robustness": "Robustness",
+                            }).style.format({
+                                "Exp. Delta (s)": "{:+.2f}",
+                                "5th Pct (s)": "{:+.2f}",
+                                "95th Pct (s)": "{:+.2f}",
+                                "P(Pos Improves)": "{:.1%}",
+                                "Dirty Air Laps": "{:.1f}",
+                                "Blocked Laps": "{:.1f}",
+                            }),
+                            width="stretch",
+                        )
 
     # -----------------------------------------------------------------------
     # TAB 2: Interactive What-If Simulator
     # -----------------------------------------------------------------------
     with tab_whatif:
-        st.subheader("Interactive Counterfactual Strategy Simulator")
-        st.markdown(
-            "Slide the stop window to simulate pitting earlier or later. "
-            "The model replays 500 stochastic paths with block-bootstrapped degradation residuals and empirical pit loss sampling."
-        )
-
         if not pit_laps:
             st.info("No pit stops available to simulate.")
         else:
-            w_col1, w_col2, w_col3 = st.columns([1, 2, 1])
-            w_stop_idx = w_col1.selectbox("Pit Stop to Alter", range(len(pit_laps)), format_func=lambda i: f"Stop {i+1} (Lap {pit_laps[i]})", key="whatif_stop_idx")
-            w_shift = w_col2.slider("Shift Lap Count", min_value=SHIFT_MIN, max_value=SHIFT_MAX, value=0, step=1, key="whatif_shift_slider")
-            w_paths = w_col3.select_slider("Rollout Paths", [200, 500, 1000], value=500, key="whatif_paths")
+            max_driver_lap = int(driver_laps["LapNumber"].max())
+            with st.container(border=True):
+                w_col1, w_col2, w_col3 = st.columns([1.2, 2, 1])
+                w_stop_idx = w_col1.selectbox("Pit Stop to Alter", range(len(pit_laps)), format_func=lambda i: f"Stop {i+1} (Lap {pit_laps[i]})", key="whatif_stop_idx")
+                w_actual_lap = pit_laps[w_stop_idx]
 
-            w_actual_lap = pit_laps[w_stop_idx]
-            w_new_lap = w_actual_lap + w_shift
-            st.write(f"Evaluating strategy: Pit at **Lap {w_new_lap}** ({w_shift:+d} laps relative to actual Lap {w_actual_lap}) — **{RIVAL_MODES[rival_mode]}**")
+                min_shift = max(SHIFT_MIN, 2 - w_actual_lap)
+                if w_stop_idx > 0:
+                    min_shift = max(min_shift, pit_laps[w_stop_idx - 1] + 2 - w_actual_lap)
+                max_shift = min(SHIFT_MAX, max_driver_lap - 1 - w_actual_lap)
+                if w_stop_idx + 1 < len(pit_laps):
+                    max_shift = min(max_shift, pit_laps[w_stop_idx + 1] - 2 - w_actual_lap)
+                min_shift = min(min_shift, 0)
+                max_shift = max(max_shift, 0)
+
+                if "whatif_shift_slider" in st.session_state:
+                    st.session_state["whatif_shift_slider"] = max(
+                        min_shift, min(max_shift, int(st.session_state["whatif_shift_slider"]))
+                    )
+
+                if min_shift < max_shift:
+                    w_shift = w_col2.slider(
+                        "Shift Lap Count",
+                        min_value=int(min_shift),
+                        max_value=int(max_shift),
+                        value=0,
+                        step=1,
+                        key="whatif_shift_slider",
+                    )
+                else:
+                    w_shift = 0
+                    w_col2.caption("No feasible shift window around this stop.")
+
+                w_paths = w_col3.select_slider("Rollout Paths", [200, 500, 1000], value=500, key="whatif_paths")
+
+                w_new_lap = w_actual_lap + w_shift
+                st.caption(f"Simulating **Lap {w_new_lap}** ({w_shift:+d} laps vs actual Lap {w_actual_lap}) under **{RIVAL_MODES[rival_mode]}**")
 
             with st.spinner("Computing counterfactual trajectory..."):
                 sim_res = run_whatif(
@@ -391,62 +515,67 @@ def render_race_review():
 
                 reactions = sim_res.get("rival_reactions", [])
                 if reactions:
-                    rx_lines = [f"**{r['driver']}** boxed **Lap {r['reacted_pit']}** (instead of Lap {r['actual_pit']}) — {r['reason']}" for r in reactions]
-                    st.info("🔄 **Rival Pit Wall Reactions:** " + " | ".join(rx_lines))
+                    cards_html = "".join(
+                        f'<div class="f1-reaction-card"><strong>{escape(str(r["driver"]))}</strong> '
+                        f'boxed Lap {r["reacted_pit"]} <span style="color:#7A8BA0;">(actual L{r["actual_pit"]})</span>'
+                        f'<br><span style="color:#AAB8C8;">{escape(str(r["reason"]))}</span></div>'
+                        for r in reactions
+                    )
+                    st.markdown(f'<div class="f1-reaction-grid">{cards_html}</div>', unsafe_allow_html=True)
                 elif rival_mode != "fixed" and w_shift != 0:
                     st.caption("No rival within the pit window needed to cover or counter this shift.")
 
-                # Cumulative Time Delta Evolution Chart
-                lap_numbers = driver_laps["LapNumber"].values
-                delta_curve = sim_res["delta_per_lap"]
+                chart_col1, chart_col2 = st.columns([3, 2], gap="medium")
 
-                fig_cum = go.Figure()
-                fig_cum.add_trace(go.Scatter(
-                    x=lap_numbers,
-                    y=delta_curve,
-                    mode="lines",
-                    line=dict(color="#FFD700", width=3),
-                    name="Counterfactual Cumulative Delta",
-                    hovertemplate="Lap %{x}: %{y:+.2f}s<extra></extra>",
-                ))
-                fig_cum.add_vline(x=w_actual_lap, line_dash="dash", line_color="#E10600", annotation_text="Actual Pit")
-                if w_shift != 0:
-                    fig_cum.add_vline(x=w_new_lap, line_dash="dash", line_color="#00D2BE", annotation_text="New Pit")
-                fig_cum.add_hline(y=0.0, line_dash="dot", line_color="#888888")
-                fig_cum.update_layout(
-                    title=f"Cumulative Race Time Delta Over Race Laps ({selected_driver})",
-                    xaxis_title="Lap Number",
-                    yaxis_title="Cumulative Delta (s) [Negative = Ahead of Actual]",
-                    template="plotly_dark",
-                    height=400,
-                )
-                st.plotly_chart(fig_cum, width="stretch")
+                with chart_col1:
+                    lap_numbers = driver_laps["LapNumber"].values
+                    delta_curve = sim_res["delta_per_lap"]
 
-                # Final Position Distribution
-                dist = sim_res["position_distribution"]
-                if len(dist) > 0 and dist.sum() > 0:
-                    pos_indices = [i for i, p in enumerate(dist) if p > 0.005 and i > 0]
-                    fig_dist = px.bar(
-                        x=pos_indices,
-                        y=[dist[i] for i in pos_indices],
-                        labels={"x": "Finishing Position", "y": "Probability"},
-                        title=f"Final Position Distribution over {w_paths} Monte Carlo Paths",
-                        template="plotly_dark",
+                    fig_cum = go.Figure()
+                    fig_cum.add_trace(go.Scatter(
+                        x=lap_numbers,
+                        y=delta_curve,
+                        mode="lines",
+                        line=dict(color="#FFD166", width=3),
+                        name="Cumulative Delta",
+                        hovertemplate="Lap %{x}: %{y:+.2f}s<extra></extra>",
+                    ))
+                    fig_cum.add_vline(x=w_actual_lap, line_dash="dash", line_color="#E10600", annotation_text="Actual Pit")
+                    if w_shift != 0:
+                        fig_cum.add_vline(x=w_new_lap, line_dash="dash", line_color="#00D4FF", annotation_text="New Pit")
+                    fig_cum.add_hline(y=0.0, line_dash="dot", line_color="rgba(255,255,255,0.35)")
+                    fig_cum.update_layout(
+                        xaxis_title="Lap Number",
+                        yaxis_title="Cumulative Delta (s)",
+                        height=400,
                     )
-                    fig_dist.update_traces(marker_color="#00D2BE")
-                    st.plotly_chart(fig_dist, width="stretch")
+                    st.plotly_chart(style_chart(fig_cum, f"Cumulative Delta ({selected_driver})"), width="stretch")
+
+                with chart_col2:
+                    dist = sim_res["position_distribution"]
+                    if len(dist) > 0 and dist.sum() > 0:
+                        pos_indices = [i for i, p in enumerate(dist) if p > 0.005 and i > 0]
+                        fig_dist = px.bar(
+                            x=[f"P{i}" for i in pos_indices],
+                            y=[dist[i] for i in pos_indices],
+                            labels={"x": "Finish Position", "y": "Probability"},
+                        )
+                        fig_dist.update_traces(marker_color="#00D4FF")
+                        fig_dist.update_layout(height=400, yaxis_tickformat=".0%")
+                        st.plotly_chart(style_chart(fig_dist, f"Finish Distribution ({w_paths} paths)"), width="stretch")
 
     # -----------------------------------------------------------------------
     # TAB 3: Lap-by-Lap Replay Table
     # -----------------------------------------------------------------------
     with tab_replay:
-        st.subheader(f"Historical Race Replay — {selected_driver} ({year} {gp_name})")
+        sc_laps_count = int(driver_laps["is_neutralized"].sum()) if "is_neutralized" in driver_laps.columns else 0
+        st.caption(f"Historical telemetry for {selected_driver} ({year} {gp_name}) — {len(driver_laps)} laps, {len(pit_laps)} stops, {sc_laps_count} SC/VSC laps.")
         replay_cols = [
             "LapNumber", "Position", "LapTime_s", "Compound", "TyreLife",
             "Stint", "is_in_lap", "is_out_lap", "is_neutralized", "gap_ahead_s", "gap_behind_s"
         ]
         available_cols = [c for c in replay_cols if c in driver_laps.columns]
-        
+
         st.dataframe(
             driver_laps[available_cols].style.format({
                 "LapTime_s": "{:.3f}",
@@ -457,7 +586,7 @@ def render_race_review():
                 "TyreLife": "{:.0f}",
                 "Stint": "{:.0f}",
             }),
-            height=450,
+            height=460,
             width="stretch",
         )
 
@@ -465,11 +594,7 @@ def render_race_review():
     # TAB 4: Tyre Degradation (Predicted vs Actual)
     # -----------------------------------------------------------------------
     with tab_deg:
-        st.subheader("Tyre Degradation Analysis (Predicted vs Actual)")
-        st.markdown(
-            "Compares observed driver stint degradation against model predictions. "
-            "Evaluates fuel-corrected lap-time progression vs tyre age."
-        )
+        st.caption("Fuel-corrected lap-time progression vs tyre age (clean green-flag laps only).")
 
         clean_driver_laps = driver_laps[
             (driver_laps["is_in_lap"] == False)
@@ -481,16 +606,14 @@ def render_race_review():
         if clean_driver_laps.empty:
             st.info("No clean green-flag laps available for degradation analysis.")
         else:
-            # Stint-level Predicted vs Actual degradation plot
             fig_deg = go.Figure()
             drv_lin_errs: list[float] = []
             drv_xgb_errs: list[float] = []
             for stint_id, grp in clean_driver_laps.groupby("Stint"):
                 grp = grp.sort_values("TyreLife")
                 comp = grp["Compound"].iloc[0] if "Compound" in grp.columns else "TYRE"
-                color = "#E10600" if comp == "SOFT" else ("#FFD700" if comp == "MEDIUM" else ("#00D2BE" if comp == "INTERMEDIATE" else "#FFFFFF"))
+                color = "#E10600" if comp == "SOFT" else ("#FFE800" if comp == "MEDIUM" else ("#3ECF8E" if comp == "INTERMEDIATE" else "#E8ECEF"))
 
-                # Fuel-corrected time relative to early stint baseline
                 fc_times = grp["LapTime_s"] - (np.maximum(110.0 - 1.7 * grp["LapNumber"], 2.0) * 0.03)
                 early_subset = fc_times[(grp["TyreLife"] >= 2) & (grp["TyreLife"] <= 6)]
                 if not early_subset.empty:
@@ -519,39 +642,38 @@ def render_race_review():
                     x=grp["TyreLife"],
                     y=deg_observed,
                     mode="markers+lines",
-                    name=f"Stint {int(stint_id)} ({comp}) Actual",
+                    name=f"S{int(stint_id)} {comp} Actual",
                     marker=dict(size=7, color=color),
-                    line=dict(color=color, width=2),
+                    line=dict(color=color, width=2.2),
                     hovertemplate="Actual Age %{x}: +%{y:.2f}s<extra></extra>",
                 ))
                 fig_deg.add_trace(go.Scatter(
                     x=grp["TyreLife"],
                     y=lin_pred,
                     mode="lines",
-                    name=f"Stint {int(stint_id)} Controlled-Linear Pred",
-                    line=dict(color=color, width=2, dash="dash"),
+                    name=f"S{int(stint_id)} Linear Pred",
+                    line=dict(color=color, width=1.8, dash="dash"),
                     hovertemplate="Linear Pred Age %{x}: +%{y:.2f}s<extra></extra>",
                 ))
                 fig_deg.add_trace(go.Scatter(
                     x=grp["TyreLife"],
                     y=xgb_pred,
                     mode="lines",
-                    name=f"Stint {int(stint_id)} Monotonic XGB Pred",
-                    line=dict(color=color, width=2, dash="dot"),
+                    name=f"S{int(stint_id)} XGB Pred",
+                    line=dict(color=color, width=1.8, dash="dot"),
                     hovertemplate="XGB Pred Age %{x}: +%{y:.2f}s<extra></extra>",
                 ))
 
             fig_deg.update_layout(
-                title=f"Predicted vs Actual Fuel-Corrected Degradation ({selected_driver})",
                 xaxis_title="Tyre Age (Laps on Tyre Set)",
-                yaxis_title="Degradation Above Stint Baseline (s)",
-                template="plotly_dark",
+                yaxis_title="Degradation Above Baseline (s)",
                 height=470,
             )
-            st.plotly_chart(fig_deg, width="stretch")
+            st.plotly_chart(
+                style_chart(fig_deg, f"Predicted vs Actual Degradation ({selected_driver})"),
+                width="stretch",
+            )
 
-            # Residual summary metrics (driver stint + full race)
-            st.markdown(f"#### Degradation Model Error Statistics ({year} {gp_name})")
             n_pairs = race_deg_stats.get("n_pairs", 0)
             lin_mae = race_deg_stats.get("linear_mae", np.nan)
             xgb_mae = race_deg_stats.get("xgb_mae", np.nan)
@@ -559,6 +681,7 @@ def render_race_review():
             xgb_r2 = race_deg_stats.get("xgb_r2", np.nan)
             drv_lin_mae = float(np.mean(drv_lin_errs)) if drv_lin_errs else np.nan
             drv_xgb_mae = float(np.mean(drv_xgb_errs)) if drv_xgb_errs else np.nan
+
             r1, r2, r3, r4 = st.columns(4)
             r1.metric("Extrapolation Model", "Smooth Physics + LODO EB")
             r2.metric(
@@ -574,9 +697,5 @@ def render_race_review():
             r4.metric(
                 f"{selected_driver} Stint MAE (Lin / XGB)",
                 f"{drv_lin_mae:.3f}s / {drv_xgb_mae:.3f}s" if pd.notnull(drv_lin_mae) else "N/A",
-            )
-            st.caption(
-                f"Pit loss pools for {year} {gp_name}: {len(pit_loss_green)} green stops "
-                f"(median {np.median(pit_loss_green):.2f}s), {len(pit_loss_neutralized)} neutralized stops."
             )
 
