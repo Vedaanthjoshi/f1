@@ -361,9 +361,19 @@ def train_global_model(
 
     # ── Fix 4: Full 5-Fold Race-wise GroupKFold Cross-Validation ──────────────
     print("\n" + "=" * 65)
-    print("RUNNING 5-FOLD RACE-WISE GROUP-KFOLD CROSS-VALIDATION")
+    n_groups = len(set(groups))
+    if n_groups >= 2:
+        n_splits = min(5, n_groups)
+        print(f"RUNNING {n_splits}-FOLD RACE-WISE GROUP-KFOLD CROSS-VALIDATION")
+        cv_splitter = GroupKFold(n_splits=n_splits)
+        splits = list(cv_splitter.split(X, y, groups))
+    else:
+        from sklearn.model_selection import KFold
+        n_splits = min(5, len(clean_df))
+        print(f"RUNNING {n_splits}-FOLD K-FOLD CROSS-VALIDATION (Single Race)")
+        cv_splitter = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+        splits = list(cv_splitter.split(X, y))
     print("=" * 65)
-    gkf = GroupKFold(n_splits=5)
 
     cv_p50_mae: list[float] = []
     cv_p50_rmse: list[float] = []
@@ -374,7 +384,7 @@ def train_global_model(
     cv_pinball_95: list[float] = []
     oof_preds = np.zeros((len(clean_df), 3), dtype=float)
 
-    for fold, (train_idx, test_idx) in enumerate(gkf.split(X, y, groups), 1):
+    for fold, (train_idx, test_idx) in enumerate(splits, 1):
         tr_clean = train_idx[clean_dry[train_idx]]
         te_clean_mask = clean_dry[test_idx]
         X_tr, y_tr = X.iloc[tr_clean], y.iloc[tr_clean]
