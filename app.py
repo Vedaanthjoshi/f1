@@ -187,15 +187,22 @@ with st.spinner(f"Loading {default_season} schedule..."):
 default_race = default_races[0] if default_races else "Bahrain Grand Prix"
 init_session_state(default_season=default_season, default_race=default_race)
 
-render_race_setup(
-    current_season=default_season,
-    races=default_races,
-    current_race=default_race,
-    schedule_loader=get_schedule,
-    on_load_requested=load_requested_race,
-)
+tab_strategy, tab_review = st.tabs(["🏎️ Live Strategy Dashboard", "📋 Race Review & What-If"])
 
-if "year" in st.session_state and "race" in st.session_state and st.session_state.get("data_loaded"):
-    render_strategy_dashboard()
-else:
-    st.info("Choose a season and Grand Prix, then load race strategy data to open the analysis dashboard.")
+with tab_strategy:
+    render_race_setup(
+        current_season=default_season,
+        races=default_races,
+        current_race=default_race,
+        schedule_loader=get_schedule,
+        on_load_requested=load_requested_race,
+    )
+
+    if "year" in st.session_state and "race" in st.session_state and st.session_state.get("data_loaded"):
+        render_strategy_dashboard()
+    else:
+        st.info("Choose a season and Grand Prix, then load race strategy data to open the analysis dashboard.")
+
+with tab_review:
+    from ui.pages.race_review import render_race_review
+    render_race_review()

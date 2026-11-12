@@ -30,8 +30,8 @@ This repository includes detailed academic and technical documentation structure
 | **Uncertainty Bounds** | None (Single float) | None (Point estimate) | **$90\%$ Confidence Intervals ($p05 - p95$)** |
 | **Rival Tactical Reaction** | Ignored | Ignored | **Two-Car Relative Undercut Differential** |
 | **Safety Car Dynamics** | Ignored | Ignored | **24-Circuit Poisson Rates + 65% Loss Drop** |
-| **Backtest Precision** | $0.0\%$ | N/A (Deterministic) | **$80.0\%$ (4 TP, 1 FP on real telemetry)** |
-| **Backtest Accuracy** | $26.7\%$ | $46.7\%$ | **$53.3\%$ (8 / 15 correct decisions)** |
+| **Backtest Precision** | $0.0\%$ | N/A (Deterministic) | **$80.0\%$ (4 TP, 1 FP on real telemetry; in-sample sanity check (13 of 15 races were in the training data))** |
+| **Backtest Accuracy** | $26.7\%$ | $46.7\%$ | **$53.3\%$ (8 / 15 correct decisions; in-sample sanity check (13 of 15 races were in the training data))** |
 
 ---
 
