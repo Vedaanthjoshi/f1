@@ -15,13 +15,35 @@ def render_homepage_hero() -> None:
             """
             <section class="nfs-hero">
                 <div class="nfs-hero-content">
-                    <div class="nfs-kicker">Live race data &nbsp;&middot;&nbsp; ML strategy model</div>
+                    <div class="f1-gantry-row">
+                        <div class="f1-lights" aria-hidden="true">
+                            <span class="f1-light-dot"></span>
+                            <span class="f1-light-dot"></span>
+                            <span class="f1-light-dot"></span>
+                            <span class="f1-light-dot"></span>
+                            <span class="f1-light-dot"></span>
+                        </div>
+                        <div class="nfs-kicker">Pit Wall Telemetry &nbsp;//&nbsp; Live Strategy Engine</div>
+                    </div>
                     <h1 class="nfs-title">F1 <em>Strategy</em><br>Engineer</h1>
                     <p class="nfs-copy">
-                        Set up a Grand Prix, choose the tactical matchup, and load the race engine
-                        to expose tyre degradation, gap evolution, and the exact lap where the
-                        undercut becomes a threat.
+                        Configure a Grand Prix, lock in the on-track matchup, and run the probabilistic
+                        race engine to expose tyre degradation, gap evolution, and exact undercut windows.
                     </p>
+                </div>
+                <div class="f1-hero-telemetry">
+                    <div class="f1-telem-pill">
+                        <span>Model</span>
+                        <strong>XGBoost Quantile</strong>
+                    </div>
+                    <div class="f1-telem-pill">
+                        <span>Bounds</span>
+                        <strong>p05 / p50 / p95</strong>
+                    </div>
+                    <div class="f1-telem-pill">
+                        <span>Simulator</span>
+                        <strong>500x Monte Carlo</strong>
+                    </div>
                 </div>
             </section>
             """

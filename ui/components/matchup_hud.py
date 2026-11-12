@@ -49,6 +49,7 @@ def _driver_card(code: str | None, label: str, role_type: str = "target") -> str
         avatar_html = f'<span class="f1-hud-monogram">{escape(code[:3].upper())}</span>'
 
     role_badge_label = "ATTACKER // TARGET" if role_type == "target" else "DEFENDER // CHASER"
+    driver_code = escape(code[:3].upper())
 
     return (
         f'<div class="f1-hud-panel {role_type}-hud" style="--accent: {escape(accent)}; --accent-glow: {escape(accent)}44;">'
@@ -59,7 +60,7 @@ def _driver_card(code: str | None, label: str, role_type: str = "target") -> str
         f'  <div class="f1-hud-body">'
         f'    <div class="f1-hud-avatar">{avatar_html}</div>'
         f'    <div>'
-        f'      <div class="f1-hud-name">{escape(driver.get("name", code))}</div>'
+        f'      <div class="f1-hud-name"><span class="f1-driver-tag">{driver_code}</span>{escape(driver.get("name", code))}</div>'
         f'      <div class="f1-hud-team">{escape(team.get("name", "Unknown Team"))}</div>'
         f'    </div>'
         f'  </div>'
@@ -79,8 +80,20 @@ def render_matchup_preview(driver_a: str | None, driver_b: str | None, race: str
     track_laps = f"{track['laps']} Laps" if track and track.get("laps") else "Race Distance"
     track_len = f"{track['lengthKm']} km" if track and track.get("lengthKm") else ""
 
+    ctx = track.get("strategyContext", {}) if track else {}
+    tags_html = ""
+    if ctx:
+        tags = [
+            f"Tyre: {ctx.get('tyreStress', '—')}",
+            f"Pass: {ctx.get('overtakingDifficulty', '—')}",
+            f"Pit: {ctx.get('pitLaneSensitivity', '—')}",
+        ]
+        tags_html = '<div class="f1-track-tags">' + "".join(
+            f'<span class="f1-track-tag">{escape(t)}</span>' for t in tags
+        ) + "</div>"
+
     svg_track = '''
-    <svg width="60" height="40" viewBox="0 0 100 60" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 0.5rem;">
+    <svg width="56" height="36" viewBox="0 0 100 60" fill="none" stroke="rgba(225,6,0,0.65)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 0.35rem;">
         <path d="M 20 50 L 80 50 Q 90 50 90 40 L 90 20 Q 90 10 80 10 L 40 10 Q 30 10 30 20 L 30 30 Q 30 40 20 40 L 10 40 Q 5 40 5 45 Q 5 50 20 50 Z" />
     </svg>
     '''
@@ -99,10 +112,11 @@ def render_matchup_preview(driver_a: str | None, driver_b: str | None, race: str
             '    <div class="f1-hud-top">'
             '      <span class="f1-hud-badge" style="background: rgba(255,255,255,0.12); box-shadow: none;">CIRCUIT PROFILE</span>'
             '    </div>'
-            '    <div class="f1-hud-body" style="flex-direction: column; align-items: flex-start; gap: 0.25rem;">'
+            '    <div class="f1-hud-body" style="flex-direction: column; align-items: flex-start; gap: 0.2rem;">'
             f'      {svg_track}'
-            f'      <div class="f1-hud-name" style="font-size: 1.15rem;">{escape(track_circuit)}</div>'
+            f'      <div class="f1-hud-name" style="font-size: 1.08rem;">{escape(track_circuit)}</div>'
             f'      <div class="f1-hud-team">{escape(track_country)}</div>'
+            f'      {tags_html}'
             '    </div>'
             '    <div class="f1-hud-footer">'
             f'      <span>🏁 {escape(track_laps)}</span>'

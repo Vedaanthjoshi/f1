@@ -11,6 +11,18 @@ import streamlit as st
 from engine.safety_car import get_circuit_sc_rate
 
 
+def _compound_pill(strategy_name: str) -> str:
+    """Return a Pirelli-style circular compound badge for the strategy name."""
+    upper = strategy_name.upper()
+    if "SOFT" in upper:
+        return '<span class="pirelli-pill pirelli-soft">S</span>'
+    if "MEDIUM" in upper:
+        return '<span class="pirelli-pill pirelli-medium">M</span>'
+    if "HARD" in upper:
+        return '<span class="pirelli-pill pirelli-hard">H</span>'
+    return '<span class="pirelli-pill pirelli-stay">&#8212;</span>'
+
+
 def render_strategy_table(
     mc_results: list[dict[str, Any]],
     race_name: str,
@@ -23,7 +35,7 @@ def render_strategy_table(
 
     if best_strat:
         st.success(
-            f"✅ **STRATEGY RECOMMENDED: {best_strat['name']}** — "
+            f"✅ **BOX THIS LAP — {best_strat['name']}** — "
             f"{best_strat['p_net_gain']:.0%} probability of net gain, "
             f"expected +{best_strat['expected_gain_s']:.2f}s "
             f"(CI: {best_strat['gain_ci_low']:+.1f}s → {best_strat['gain_ci_high']:+.1f}s)"
@@ -33,6 +45,10 @@ def render_strategy_table(
 
     rows_html = ""
     for r in mc_results:
+        is_best = best_strat is not None and r["name"] == best_strat["name"]
+        row_cls = ' class="mc-row-best"' if is_best else ""
+        pill = _compound_pill(r["name"])
+
         if r["name"] == "Stay Out":
             badge = '<span class="mc-badge-neutral">BASELINE</span>'
             gain_str = "<span style='color:#7A8BA0'>&#8212;</span>"
@@ -43,7 +59,12 @@ def render_strategy_table(
             badge = '<span class="mc-badge-open">OPEN</span>' if r["window_open"] else '<span class="mc-badge-closed">CLOSED</span>'
             p_val = r['p_net_gain']
             p_cls = 'mc-p-high' if p_val >= 0.65 else ('mc-p-mid' if p_val >= 0.50 else 'mc-p-low')
-            p_str = f'<span class="{p_cls}">{p_val:.0%}</span>'
+            bar_color = '#3ECF8E' if p_val >= 0.65 else ('#FFD166' if p_val >= 0.50 else '#FF5C5C')
+            bar_pct = max(0, min(100, int(round(p_val * 100))))
+            p_str = (
+                f'<span class="{p_cls}">{p_val:.0%}</span>'
+                f'<div class="mc-prob-bar-wrap"><div class="mc-prob-bar-fill" style="width:{bar_pct}%;background:{bar_color};"></div></div>'
+            )
             g_val = r['expected_gain_s']
             g_cls = 'mc-gain-pos' if g_val > 0 else 'mc-gain-neg'
             gain_str = f'<span class="{g_cls}">{g_val:+.2f}s</span>'
@@ -59,8 +80,8 @@ def render_strategy_table(
         cover_str = f'<span class="{cover_cls}">{cover_val:.0%}</span>'
 
         rows_html += (
-            f"<tr>"
-            f"<td><strong>{r['name']}</strong></td>"
+            f"<tr{row_cls}>"
+            f"<td>{pill}<strong>{r['name']}</strong></td>"
             f"<td>{p_str}</td>"
             f"<td>{gain_str}</td>"
             f"<td>{ci_str}</td>"

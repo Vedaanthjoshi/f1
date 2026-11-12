@@ -20,9 +20,10 @@ fastf1.Cache.enable_cache(CACHE_DIR)
 
 # FIA / FastF1 neutralization codes:
 # '4': Safety Car (SC)
+# '5': Red Flag (RF)
 # '6': Virtual Safety Car (VSC) Deployed
 # '7': Virtual Safety Car (VSC) Ending
-NEUTRALIZATION_CODES = ("4", "6", "7")
+NEUTRALIZATION_CODES = ("4", "5", "6", "7")
 
 
 def load_replay_table(year: int, gp_name: str, session: Any = None) -> pd.DataFrame:
@@ -44,6 +45,8 @@ def load_replay_table(year: int, gp_name: str, session: Any = None) -> pd.DataFr
     # Base telemetry columns
     df = pd.DataFrame()
     df['Driver'] = raw_laps['Driver'].astype(str)
+    if 'Team' in raw_laps.columns:
+        df['Team'] = raw_laps['Team'].astype(str)
     df['LapNumber'] = raw_laps['LapNumber'].astype(float)
     df['Position'] = raw_laps['Position'].astype(float)
     df['Time_s'] = raw_laps['Time'].dt.total_seconds()

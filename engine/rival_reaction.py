@@ -9,24 +9,68 @@ Models game-theoretic two-car interaction during an undercut attempt:
 from __future__ import annotations
 import numpy as np
 
+# Circuit overtaking friction & wake constants shared with strategy simulation
+_DIRTY_AIR_PENALTY = {"Low": 0.35, "Medium": 0.55, "High": 0.90}
+_OVERTAKE_THRESHOLD = {"Low": 0.55, "Medium": 1.00, "High": 1.80}
 
-def calculate_cover_rate(rival_gap_s: float | None) -> float:
+_HIGH_DIFFICULTY_CIRCUITS = {
+    "Monaco Grand Prix",
+    "Singapore Grand Prix",
+    "Hungarian Grand Prix",
+    "Spanish Grand Prix",
+    "Dutch Grand Prix",
+    "Emilia Romagna Grand Prix",
+}
+_LOW_DIFFICULTY_CIRCUITS = {
+    "Canadian Grand Prix",
+    "Italian Grand Prix",
+    "Belgian Grand Prix",
+    "Azerbaijan Grand Prix",
+    "Las Vegas Grand Prix",
+    "Austrian Grand Prix",
+}
+
+
+def get_overtaking_difficulty(race_name: str = "") -> str:
+    """Resolve circuit overtaking difficulty category ('Low', 'Medium', 'High')."""
+    if race_name in _HIGH_DIFFICULTY_CIRCUITS:
+        return "High"
+    if race_name in _LOW_DIFFICULTY_CIRCUITS:
+        return "Low"
+    return "Medium"
+
+
+def calculate_cover_rate(
+    rival_gap_s: float | None,
+    def_tyre_age: float | None = None,
+    def_compound_encoded: float | None = None,
+) -> float:
     """
-    Compute empirical defensive cover probability based on gap size in seconds.
-    Tighter gaps induce higher cover urgency from the pit wall.
+    Compute empirical 1-2 lap defensive cover probability from 2023 F1 pit-duel data.
+    When defender tyre age/compound are known, uses the 4-parameter 2023-calibrated
+    logistic model; otherwise falls back to the 2023 gap-only schedule.
     """
     if rival_gap_s is None or np.isnan(rival_gap_s):
-        return 0.35  # default moderate cover probability if gap unknown
+        return 0.55
 
-    abs_gap = abs(rival_gap_s)
+    abs_gap = abs(float(rival_gap_s))
+    if def_tyre_age is not None or def_compound_encoded is not None:
+        age = float(def_tyre_age) if def_tyre_age is not None and not np.isnan(def_tyre_age) else 15.0
+        comp = float(def_compound_encoded) if def_compound_encoded is not None and not np.isnan(def_compound_encoded) else 2.0
+        logit = 1.0759 - 0.1454 * abs_gap + 0.0428 * age - 0.4118 * comp
+        prob = 1.0 / (1.0 + np.exp(-np.clip(logit, -10.0, 10.0)))
+        return float(np.clip(prob, 0.15, 0.90))
+
     if abs_gap <= 1.5:
-        return 0.80   # high urgency: immediate reaction
-    elif abs_gap <= 3.0:
-        return 0.60   # standard undercut defense window
-    elif abs_gap <= 5.0:
-        return 0.30   # loose window: defender may choose to extend
+        return 0.64
+    elif abs_gap <= 2.5:
+        return 0.67
+    elif abs_gap <= 3.5:
+        return 0.70
+    elif abs_gap <= 4.5:
+        return 0.60
     else:
-        return 0.10   # gap too large: defender stays out
+        return 0.52
 
 
 def simulate_undercut_differential(
@@ -41,91 +85,84 @@ def simulate_undercut_differential(
     rng: np.random.Generator,
     out_lap_penalty: float = 1.5,
     defender_fresh_lap_times: np.ndarray | None = None,
+    fuel_corrections: np.ndarray | None = None,
+    overtaking_difficulty: str = "Medium",
+    push_bonus_per_lap: float = 0.90,
 ) -> np.ndarray:
     """
-    Simulate the two-car undercut differential equation between Attacker and Defender.
-
-    Parameters
-    ----------
-    attacker_lap_times_no_pitloss : shape (n_rollouts, horizon)
-        Pure driving lap times of attacker (fresh tyres starting at pit_offset).
-    defender_stay_out_times : shape (n_rollouts, horizon)
-        Lap times of defender staying on worn tyres (pre-cover laps only).
-    defender_fresh_lap_times : shape (n_rollouts, horizon) or None
-        Fresh-tyre lap times for the defender if they pit to cover. When supplied,
-        the defender's times from (react_pit_lap + 2) onward are replaced with these
-        predictions so the defender is correctly credited with fresh rubber after
-        their stop. If None, defender_stay_out_times is used for all laps (old
-        behaviour — systematically overstates the attacker's advantage).
-    pit_offset : int
-        Horizon lap index where attacker pits (e.g. 0 for Pit This Lap).
-    horizon : int
-        Forward simulation horizon in laps.
-    effective_pit_loss : shape (n_rollouts,)
-        Pit lane transit and stop time loss in seconds.
-    rival_gap_s : float or None
-        Initial time gap between defender and attacker (defender ahead by rival_gap_s).
-    cover_rate : float
-        Probability that defender pits on lap pit_offset + 1 to cover.
-    n_rollouts : int
-        Number of Monte Carlo rollouts.
-    rng : np.random.Generator
-        Random number generator.
-    out_lap_penalty : float
-        Cold-tyre out-lap warmup penalty in seconds.
-
-    Returns
-    -------
-    net_margins : np.ndarray of shape (n_rollouts,)
-        Net time margin (+ = attacker ahead / undercut successful, - = defender ahead).
+    Vectorized two-car undercut differential with multi-lag defender cover reactions (+1, +2, +4),
+    age-indexed fresh-tyre pace reset, undercut free-air push extraction, and symmetric
+    dirty-air / overtaking resistance blocking phantom frictionless passes.
     """
-    init_gap = abs(rival_gap_s) if rival_gap_s is not None else 2.5
-    rival_reacts = rng.binomial(1, cover_rate, size=n_rollouts).astype(bool)
-    net_margins = np.zeros(n_rollouts)
+    init_gap = abs(float(rival_gap_s)) if rival_gap_s is not None else 2.5
+    p_cov = float(np.clip(cover_rate, 0.0, 1.0))
+    # Split defensive covers into immediate (+1 lap: 62%) and reactive (+2 laps: 38%), else extend (+4)
+    p_lag1 = 0.62 * p_cov
+    p_lag2 = 0.38 * p_cov
+    p_ext = max(0.0, 1.0 - p_lag1 - p_lag2)
+    lags = rng.choice([1, 2, 4], size=n_rollouts, p=[p_lag1, p_lag2, p_ext])
 
-    for i in range(n_rollouts):
-        pit_loss_val = effective_pit_loss[i]
-        
-        # Attacker lap times including pit loss and out-lap warmup
-        att_times = attacker_lap_times_no_pitloss[i].copy()
-        att_times[pit_offset] += pit_loss_val
-        out_lap_idx = min(pit_offset + 1, horizon - 1)
-        att_times[out_lap_idx] += out_lap_penalty
+    att = attacker_lap_times_no_pitloss.copy()
+    if pit_offset < horizon:
+        att[:, pit_offset] += effective_pit_loss
+    if pit_offset + 1 < horizon:
+        att[:, pit_offset + 1] += out_lap_penalty
 
-        def_times = defender_stay_out_times[i].copy()
+    df_t = defender_stay_out_times.copy()
+    def_pits = np.minimum(pit_offset + lags, max(pit_offset + 1, horizon - 2))
 
-        if rival_reacts[i] and (pit_offset + 1 < horizon):
-            # Defender COVERS on the very next lap (pit_offset + 1).
-            # The cover lap is driven on worn tyres (in-lap) + pit transit loss.
-            react_pit_lap = pit_offset + 1
-            def_times[react_pit_lap] += pit_loss_val
-            out_lap_cover = react_pit_lap + 1
+    for lag_val in (1, 2, 4):
+        m = lags == lag_val
+        if not np.any(m):
+            continue
+        dp = int(min(pit_offset + lag_val, max(pit_offset + 1, horizon - 2)))
+        if dp < horizon:
+            df_t[m, dp] += effective_pit_loss[m]
+            od = dp + 1
+            if od < horizon:
+                if defender_fresh_lap_times is not None:
+                    if fuel_corrections is not None:
+                        # Age-indexed fresh predictions: age 1 begins cleanly at defender's out-lap `od`
+                        k_len = horizon - od
+                        df_t[m, od:horizon] = defender_fresh_lap_times[m, :k_len] + fuel_corrections[od:horizon]
+                    else:
+                        df_t[m, od:horizon] = defender_fresh_lap_times[m, od:horizon]
+                df_t[m, od] += out_lap_penalty
 
-            # From the out-lap onward, the defender is now on fresh tyres.
-            if defender_fresh_lap_times is not None and out_lap_cover < horizon:
-                def_times[out_lap_cover:] = defender_fresh_lap_times[i, out_lap_cover:]
-            if out_lap_cover < horizon:
-                def_times[out_lap_cover] += out_lap_penalty
+    dirty_air_s = _DIRTY_AIR_PENALTY.get(overtaking_difficulty, 0.55)
+    overtake_thresh_s = _OVERTAKE_THRESHOLD.get(overtaking_difficulty, 1.00)
 
-            # Evaluate over the full horizon.
-            diff = np.sum(def_times) - np.sum(att_times)
-            net_margins[i] = diff - init_gap
-        else:
-            # Defender EXTENDS (does not cover immediately).
-            # Defender stays on worn tyres, then pits 5 laps after the attacker.
-            def_pit_lap = min(pit_offset + 5, horizon - 2)
-            if def_pit_lap < horizon:
-                def_times[def_pit_lap] += pit_loss_val
-                out_lap_ext = def_pit_lap + 1
-                if defender_fresh_lap_times is not None and out_lap_ext < horizon:
-                    def_times[out_lap_ext:] = defender_fresh_lap_times[i, out_lap_ext:]
-                if out_lap_ext < horizon:
-                    def_times[out_lap_ext] += out_lap_penalty
+    cum = np.full(n_rollouts, -init_gap, dtype=float)
+    for h in range(horizon):
+        a_l = att[:, h].copy()
+        d_l = df_t[:, h].copy()
 
-            diff = np.sum(def_times) - np.sum(att_times)
-            net_margins[i] = diff - init_gap
+        # Free-air undercut push vs defender in-lap / worn-tyre management while defender stays out
+        in_window = (h >= pit_offset + 1) & (h <= def_pits)
+        a_l[in_window] -= push_bonus_per_lap
 
-    return net_margins
+        # Symmetric dirty-air wake (when trailing car is inside 1.5s wake on non-pit/out laps)
+        is_racing_lap = (
+            (h != pit_offset)
+            & (h != pit_offset + 1)
+            & (h != def_pits)
+            & (h != def_pits + 1)
+        )
+        att_in_wake = is_racing_lap & (cum < 0.0) & (-cum <= 1.5)
+        def_in_wake = is_racing_lap & (cum > 0.0) & (cum <= 1.5)
+        a_l[att_in_wake] += dirty_air_s
+        d_l[def_in_wake] += dirty_air_s
+
+        new_cum = cum + (d_l - a_l)
+
+        # Symmetric overtaking pace threshold: cannot overtake on track unless pace delta >= threshold
+        att_blocked = (cum < 0.0) & (new_cum > 0.0) & (h != def_pits) & ((d_l - a_l) < overtake_thresh_s)
+        def_blocked = (cum > 0.0) & (new_cum < 0.0) & (h != pit_offset) & ((a_l - d_l) < overtake_thresh_s)
+        new_cum = np.where(att_blocked, -0.35, new_cum)
+        new_cum = np.where(def_blocked, +0.35, new_cum)
+        cum = new_cum
+
+    return cum
 
 
 def apply_rival_reaction(*args, **kwargs) -> np.ndarray:

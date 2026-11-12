@@ -29,6 +29,7 @@ from pipeline.features import apply_feature_engineering, CIRCUIT_PHYSICS, FEATUR
 from pipeline.baseline import prepare_ml_data
 from engine.pit_loss import calculate_pit_loss
 from engine.monte_carlo import run_mc_simulation
+from ml.trainer import estimate_causal_race_eb
 
 warnings.filterwarnings("ignore")
 
@@ -179,7 +180,7 @@ def evaluate_single_undercut(
         if verbose:
             print(f"  Loading {season} {race} ...")
         session = fastf1.get_session(season, race, 'R')
-        session.load(weather=True, messages=False, laps=True)
+        session.load(laps=True, telemetry=False, weather=True, messages=False)
     except Exception as e:
         result_base['load_error'] = f"FastF1 load: {e}"
         if verbose:
@@ -235,6 +236,23 @@ def evaluate_single_undercut(
     # ── 4. Run Vectorized Monte Carlo Strategy Optimization (500 Rollouts) ────
     model = model_meta['model']
     features = model_meta.get('features', FEATURE_COLS_14)
+    total_laps = int(ml_data['LapNumber'].max()) if not ml_data.empty else None
+    past_laps = ml_data[ml_data['LapNumber'] <= eval_lap]
+    race_alpha, race_bias = estimate_causal_race_eb(past_laps, model, features)
+
+    rival_name = event.get('rival')
+    defender_state = None
+    if rival_name:
+        def_laps = past_laps[past_laps['Driver'] == rival_name].sort_values('LapNumber')
+        if not def_laps.empty:
+            d_last = def_laps.iloc[-1]
+            defender_state = {
+                'tyre_age': float(d_last.get('tyre_age', 1)),
+                'compound_encoded': int(d_last.get('compound_encoded', 2)),
+                'baseline_pace': float(d_last.get('baseline_pace', d_last['fuel_corrected_time'])),
+                'Track': race,
+                'Driver': rival_name,
+            }
 
     mc_results = run_mc_simulation(
         model=model,
@@ -247,6 +265,10 @@ def evaluate_single_undercut(
         horizon=HORIZON,
         feature_cols=features,
         rival_gap_s=rival_gap,
+        total_laps=total_laps,
+        race_alpha=race_alpha,
+        race_bias=race_bias,
+        defender_state=defender_state,
     )
 
     # Find the best pit strategy among candidate tactical options

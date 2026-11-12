@@ -14,7 +14,11 @@ import pandas as pd
 
 from engine.safety_car import get_circuit_sc_rate, SC_PIT_LOSS_MULTIPLIER
 from engine.strategies import STRATEGIES
-from engine.rival_reaction import calculate_cover_rate, simulate_undercut_differential
+from engine.rival_reaction import (
+    calculate_cover_rate,
+    get_overtaking_difficulty,
+    simulate_undercut_differential,
+)
 from pipeline.features import CIRCUIT_PHYSICS, PIRELLI_EVENT_ALLOCATIONS, FEATURE_COLS_14
 
 
@@ -94,6 +98,11 @@ def run_mc_simulation(
     seed: int = 42,
     rival_gap_s: float | None = None,
     total_laps: int | None = None,
+    race_alpha: float = 1.0,
+    race_bias: float = 0.0,
+    overtaking_difficulty: str | None = None,
+    defender_state: dict[str, Any] | None = None,
+    compound_pace_offsets: dict[int, float] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Run Monte Carlo strategy evaluation across all candidate tactical strategies.
@@ -110,7 +119,11 @@ def run_mc_simulation(
     horizon : int, forward prediction window in laps (default 15)
     rival_gap_s : float or None, gap in seconds to defending rival (if attempting undercut)
     total_laps : int or None, total scheduled race laps to clamp forward horizon
+    race_alpha : float, causal Empirical Bayes degradation multiplier (default 1.0)
+    race_bias : float, causal Empirical Bayes pace residual bias (default 0.0)
+    overtaking_difficulty : str or None, circuit overtaking difficulty ('Low', 'Medium', 'High')
     """
+    from ml.trainer import apply_race_eb
     if feature_cols is None:
         feature_cols = FEATURE_COLS_14
 
@@ -121,7 +134,14 @@ def run_mc_simulation(
 
     sc_rate = get_circuit_sc_rate(race_name)
     rng = np.random.default_rng(seed)
-    cover_rate = calculate_cover_rate(rival_gap_s)
+    def_age_val = defender_state.get('tyre_age') if defender_state else None
+    def_comp_val = defender_state.get('compound_encoded') if defender_state else None
+    cover_rate = calculate_cover_rate(
+        rival_gap_s,
+        def_tyre_age=def_age_val,
+        def_compound_encoded=def_comp_val,
+    )
+    diff = overtaking_difficulty or get_overtaking_difficulty(race_name)
 
     # Pre-compute shared track environment arrays across horizon laps
     evo_map = track_env.set_index('LapNumber')['track_evolution'].to_dict() if 'LapNumber' in track_env.columns else {}
@@ -142,9 +162,44 @@ def run_mc_simulation(
         current_state, evos, temps, fuel_masses, feature_cols
     )
     so_p5, so_p50, so_p95 = _predict_quantiles(model, so_df)
+    so_p50_eb = apply_race_eb(so_p50, race_alpha, race_bias)
     so_std = np.maximum((so_p95 - so_p5) / (2 * 1.645), 1e-4)
-    so_delta_samples = rng.normal(loc=so_p50, scale=so_std, size=(n_rollouts, horizon))
+    so_delta_samples = rng.normal(loc=so_p50_eb, scale=so_std, size=(n_rollouts, horizon))
     so_lap_times = current_state['baseline_pace'] + so_delta_samples + fuel_corrections
+
+    # --- Defender stay-out baseline (use real defender pace/tyre state when available) ---
+    if defender_state is not None:
+        def_ages = np.array([defender_state['tyre_age'] + n for n in range(horizon)])
+        def_df = _build_feature_batch(
+            def_ages, int(defender_state['compound_encoded']),
+            defender_state, evos, temps, fuel_masses, feature_cols
+        )
+        d_p5, d_p50, d_p95 = _predict_quantiles(model, def_df)
+        d_p50_eb = apply_race_eb(d_p50, race_alpha, race_bias)
+        d_std = np.maximum((d_p95 - d_p5) / (2 * 1.645), 1e-4)
+        def_delta_samples = rng.normal(loc=d_p50_eb, scale=d_std, size=(n_rollouts, horizon))
+        def_bp_shrunk = current_state['baseline_pace'] + float(
+            np.clip(defender_state['baseline_pace'] - current_state['baseline_pace'], -0.50, 0.50)
+        )
+        def_stay_out_times = def_bp_shrunk + def_delta_samples + fuel_corrections
+        def_cover_base_pace = def_bp_shrunk
+        def_ref_comp = int(defender_state['compound_encoded'])
+    else:
+        def_stay_out_times = so_lap_times
+        def_cover_base_pace = float(current_state['baseline_pace'])
+        def_ref_comp = int(current_state.get('compound_encoded', 2))
+
+    att_ref_comp = int(current_state.get('compound_encoded', 2))
+    track_name_cur = current_state.get('Track', '_default')
+    alloc_cur = PIRELLI_EVENT_ALLOCATIONS.get(track_name_cur, PIRELLI_EVENT_ALLOCATIONS['_default'])
+    _comp_key_map = {1: 'SOFT', 2: 'MEDIUM', 3: 'HARD'}
+
+    def _compound_offset(from_comp: int, to_comp: int) -> float:
+        if int(from_comp) == int(to_comp):
+            return 0.0
+        if compound_pace_offsets and int(from_comp) in compound_pace_offsets and int(to_comp) in compound_pace_offsets:
+            return float(np.clip(compound_pace_offsets[int(to_comp)] - compound_pace_offsets[int(from_comp)], -0.65, 0.65))
+        return 0.0
 
     results: list[dict[str, Any]] = []
 
@@ -166,14 +221,26 @@ def run_mc_simulation(
                 'window_open':        False,
                 'sc_expected_gain_s': 0.0,
                 'cover_rate':         0.0,
-                'p50_lap_times':      (current_state['baseline_pace'] + so_p50 + fuel_corrections).tolist(),
+                'p50_lap_times':      (current_state['baseline_pace'] + so_p50_eb + fuel_corrections).tolist(),
             })
             continue
 
+        if pit_offset + 2 >= horizon:
+            continue
+
+        # Filter unviable early Soft stints when >26 race laps remain and not on Soft already
+        if (
+            total_laps is not None
+            and strat_compound == 1
+            and (total_laps - (current_lap + pit_offset)) > 26
+            and int(current_state.get('compound_encoded', 2)) != 1
+        ):
+            continue
+
         # ── Pit Strategy ──────────────────────────────────────────────────────
-        # Tyre age resets to 1 upon taking fresh rubber
+        # In-lap (`n <= pit_offset`) stays on worn tyre; fresh rubber (`age = 1`) starts at out-lap (`pit_offset + 1`)
         pit_ages = np.array([
-            current_state['tyre_age'] + n if n < pit_offset else 1 + (n - pit_offset)
+            current_state['tyre_age'] + n if n <= pit_offset else float(n - pit_offset)
             for n in range(horizon)
         ], dtype=float)
 
@@ -182,10 +249,13 @@ def run_mc_simulation(
             current_state, evos, temps, fuel_masses, feature_cols
         )
         pit_p5, pit_p50, pit_p95 = _predict_quantiles(model, pit_df)
+        pit_p50_eb = apply_race_eb(pit_p50, race_alpha, race_bias)
         pit_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-4)
 
-        pit_delta_samples = rng.normal(loc=pit_p50, scale=pit_std, size=(n_rollouts, horizon))
-        pit_driving_lap_times = current_state['baseline_pace'] + pit_delta_samples + fuel_corrections
+        att_comp_shift = _compound_offset(att_ref_comp, int(strat_compound))
+        pit_delta_samples = rng.normal(loc=pit_p50_eb, scale=pit_std, size=(n_rollouts, horizon))
+        pit_driving_lap_times = current_state['baseline_pace'] + att_comp_shift + pit_delta_samples + fuel_corrections
+        pit_driving_lap_times[:, :pit_offset + 1] = so_lap_times[:, :pit_offset + 1]
 
         # Safety Car stochastic sampling on pit lap
         sc_on_pit_lap = rng.binomial(1, sc_rate, size=n_rollouts).astype(bool)
@@ -195,29 +265,33 @@ def run_mc_simulation(
             pit_loss_delta,
         )
 
-        OUT_LAP_PENALTY_S = 1.5  # cold tyre out-lap warmup penalty
+        # Compound- & temperature-aware cold tyre out-lap warmup penalty
+        strat_c_hard = float(alloc_cur.get(_comp_key_map.get(int(strat_compound), 'MEDIUM'), 3))
+        out_temp = float(temps[min(pit_offset + 1, horizon - 1)])
+        OUT_LAP_PENALTY_S = float(np.clip(
+            1.5 * (strat_c_hard / 3.0) * np.clip(1.0 - 0.012 * (out_temp - 30.0), 0.80, 1.25),
+            0.8, 2.8,
+        ))
 
-        # Build defender fresh-tyre predictions for the cover/extend branches.
-        # When the defender pits to cover, they go onto the same compound as the attacker.
-        # We model defender's post-stop pace as fresh tyre age starting from 1,
-        # using the same compound as the attacking strategy so both cars are credited
-        # with equivalent fresh rubber after their respective stops.
-        def_cover_ages = np.array([1 + n for n in range(horizon)], dtype=float)
+        # Age-indexed fresh-tyre predictions (`tyre_age = 1..horizon`) for defender cover reset
+        def_cover_ages = np.arange(1, horizon + 1, dtype=float)
+        def_cover_state = defender_state if defender_state is not None else current_state
         def_cover_df = _build_feature_batch(
             def_cover_ages, strat_compound,
-            current_state, evos, temps, fuel_masses, feature_cols
+            def_cover_state, evos, temps, fuel_masses, feature_cols
         )
-        _, def_cover_p50, _ = _predict_quantiles(model, def_cover_df)
-        # Sample defender's fresh-tyre paths with the same quantile spread as attacker
-        def_cover_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-4)
-        def_cover_delta_samples = rng.normal(loc=def_cover_p50, scale=def_cover_std, size=(n_rollouts, horizon))
-        defender_fresh_lap_times = current_state['baseline_pace'] + def_cover_delta_samples + fuel_corrections
+        def_p5, def_cover_p50, def_p95 = _predict_quantiles(model, def_cover_df)
+        def_cover_p50_eb = apply_race_eb(def_cover_p50, race_alpha, race_bias)
+        def_cover_std = np.maximum((def_p95 - def_p5) / (2 * 1.645), 1e-4)
+        def_cover_delta_samples = rng.normal(loc=def_cover_p50_eb, scale=def_cover_std, size=(n_rollouts, horizon))
+        def_comp_shift = _compound_offset(def_ref_comp, int(strat_compound))
+        defender_fresh_lap_times = def_cover_base_pace + def_comp_shift + def_cover_delta_samples
 
         # Evaluate net advantage: two-car undercut differential vs competitor
         if rival_gap_s is not None:
             final_net_gains = simulate_undercut_differential(
                 attacker_lap_times_no_pitloss=pit_driving_lap_times,
-                defender_stay_out_times=so_lap_times,
+                defender_stay_out_times=def_stay_out_times,
                 pit_offset=pit_offset,
                 horizon=horizon,
                 effective_pit_loss=effective_pit_loss,
@@ -227,6 +301,8 @@ def run_mc_simulation(
                 rng=rng,
                 out_lap_penalty=OUT_LAP_PENALTY_S,
                 defender_fresh_lap_times=defender_fresh_lap_times,
+                fuel_corrections=fuel_corrections,
+                overtaking_difficulty=diff,
             )
         else:
             # Single-car stint pace optimization against staying out forever
@@ -246,7 +322,7 @@ def run_mc_simulation(
         if rival_gap_s is not None:
             sc_gains = simulate_undercut_differential(
                 attacker_lap_times_no_pitloss=pit_driving_lap_times,
-                defender_stay_out_times=so_lap_times,
+                defender_stay_out_times=def_stay_out_times,
                 pit_offset=pit_offset,
                 horizon=horizon,
                 effective_pit_loss=sc_pit_loss_const,
@@ -256,6 +332,8 @@ def run_mc_simulation(
                 rng=rng,
                 out_lap_penalty=OUT_LAP_PENALTY_S,
                 defender_fresh_lap_times=defender_fresh_lap_times,
+                fuel_corrections=fuel_corrections,
+                overtaking_difficulty=diff,
             )
         else:
             full_pit_times_sc = pit_driving_lap_times.copy()
@@ -266,12 +344,11 @@ def run_mc_simulation(
 
         # Crossover lap: first lap where fresh tyre degradation is lower than stay-out degradation
         crossover_lap = None
-        for n in range(pit_offset, horizon):
-            if (pit_p50[n] - so_p50[n]) < -0.15:  # significant fresh tyre pace advantage
+        for n in range(pit_offset + 1, horizon):
+            if (pit_p50_eb[n] - so_p50_eb[n]) < -0.15:
                 crossover_lap = current_lap + n
                 break
 
-        # Undercut decision threshold: p_net_gain >= 50% and expected gain > 0
         window_open = (p_net_gain >= 0.50) and (expected_gain > 0.0)
 
         results.append({
@@ -286,7 +363,7 @@ def run_mc_simulation(
             'window_open':        window_open,
             'sc_expected_gain_s': sc_expected,
             'cover_rate':         cover_rate,
-            'p50_lap_times':      (current_state['baseline_pace'] + pit_p50 + fuel_corrections).tolist(),
+            'p50_lap_times':      (current_state['baseline_pace'] + pit_p50_eb + fuel_corrections).tolist(),
         })
 
     # Sort: Stay Out at index 0, remaining ranked by expected gain descending

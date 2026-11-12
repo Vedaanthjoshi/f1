@@ -64,36 +64,35 @@ def render_race_setup(
     setup_col, brief_col = st.columns([1, 1], gap="large")
 
     with setup_col:
-        st.markdown('<div class="f1-setup-card">', unsafe_allow_html=True)
-        st.markdown('<div class="f1-setup-card-label">Configure the Grand Prix</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="f1-setup-card-label">Configure the Grand Prix</div>', unsafe_allow_html=True)
 
-        home_season = st.selectbox(
-            "Season",
-            list(range(2025, 2017, -1)),
-            key="home_season",
-            on_change=sync_season,
-            args=('home',),
-        )
+            home_season = st.selectbox(
+                "Season",
+                list(range(2025, 2017, -1)),
+                key="home_season",
+                on_change=sync_season,
+                args=('home',),
+            )
 
-        home_races = races
-        if home_season != current_season:
-            with st.spinner(f"Loading {home_season} schedule..."):
-                home_races = schedule_loader(home_season)
+            home_races = races
+            if home_season != current_season:
+                with st.spinner(f"Loading {home_season} schedule..."):
+                    home_races = schedule_loader(home_season)
 
-        if st.session_state.home_race not in home_races:
-            st.session_state.home_race = home_races[0]
-            st.session_state.sidebar_race = home_races[0]
+            if st.session_state.home_race not in home_races:
+                st.session_state.home_race = home_races[0]
+                st.session_state.sidebar_race = home_races[0]
 
-        home_race = st.selectbox(
-            "Grand Prix",
-            home_races,
-            key="home_race",
-            on_change=sync_race,
-            args=('home',),
-        )
-        if st.button("Load Race Strategy Data", width='stretch'):
-            on_load_requested(home_season, home_race)
-        st.markdown('</div>', unsafe_allow_html=True)
+            home_race = st.selectbox(
+                "Grand Prix",
+                home_races,
+                key="home_race",
+                on_change=sync_race,
+                args=('home',),
+            )
+            if st.button("Load Race Strategy Data", width='stretch'):
+                on_load_requested(home_season, home_race)
 
     with brief_col:
         st.markdown(
