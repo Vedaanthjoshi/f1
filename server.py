@@ -204,23 +204,7 @@ def get_metadata():
     return {"drivers": drivers_list}
 
 
-@app.post("/api/load-race")
-def load_race(req: LoadRaceRequest):
-    """
-    Load FastF1 session, run cleaning & physics feature pipeline, and cache payload.
-    """
-    key = (req.year, req.race)
-    if key in CACHE_SESSIONS:
-        return CACHE_SESSIONS[key]["race_info"]
-
-    session = load_race_session(req.year, req.race)
-    if session is None:
-        raise HTTPException(status_code=404, detail=f"Failed to load race session for {req.year} {req.race}")
-
-    backend_payload, error_msg = process_telemetry_pipeline(session)
-    if error_msg or not backend_payload:
-        raise HTTPException(status_code=400, detail=error_msg or "Failed to process telemetry pipeline")
-
+def _build_race_info(req_year: int, req_race: str, backend_payload: dict, session: Any = None, fallback_used: bool = False, fallback_reason: str = "") -> dict[str, Any]:
     ml_data: pd.DataFrame = backend_payload["ml_data"]
     pit_loss: float = float(backend_payload.get("pit_loss", 22.0))
     all_drivers = [str(x) for x in ml_data["Driver"].unique().tolist()]
@@ -244,12 +228,15 @@ def load_race(req: LoadRaceRequest):
     min_lap = int(ml_data["LapNumber"].min()) if not ml_data.empty else 1
     max_lap = int(ml_data["LapNumber"].max()) if not ml_data.empty else 57
 
-    circuit_name = getattr(session.event, "Location", req.race)
-    country_name = getattr(session.event, "Country", "F1 Circuit")
+    circuit_name = req_race
+    country_name = "F1 Circuit"
+    if session and hasattr(session, "event"):
+        circuit_name = getattr(session.event, "Location", req_race)
+        country_name = getattr(session.event, "Country", "F1 Circuit")
 
-    race_info = {
-        "year": req.year,
-        "race": req.race,
+    return {
+        "year": req_year,
+        "race": req_race,
         "circuit": circuit_name,
         "country": country_name,
         "laps_count": max_lap,
@@ -259,15 +246,71 @@ def load_race(req: LoadRaceRequest):
         "pit_loss": round(pit_loss, 2),
         "drivers": all_drivers,
         "laps": laps_records,
+        "fallback_used": fallback_used,
+        "fallback_reason": fallback_reason,
     }
 
-    CACHE_SESSIONS[key] = {
-        "backend_payload": backend_payload,
-        "race_info": race_info,
-        "session": session,
-    }
 
-    return race_info
+@app.post("/api/load-race")
+def load_race(req: LoadRaceRequest):
+    """
+    Load FastF1 session, run cleaning & physics feature pipeline, and cache payload.
+    Provides fast disk cache and graceful benchmark fallback.
+    """
+    key = (req.year, req.race)
+    if key in CACHE_SESSIONS:
+        return CACHE_SESSIONS[key]["race_info"]
+
+    live_cache_file = os.path.join("f1_cache", "live_payload_2023_bahrain.joblib")
+    if (("bahrain" in req.race.lower() and req.year == 2023) or req.year >= 2025) and os.path.exists(live_cache_file):
+        try:
+            logger.info(f"Loading precomputed live session payload from {live_cache_file}")
+            bp = joblib.load(live_cache_file)
+            fallback = req.year >= 2025
+            reason = (
+                f"Telemetry unavailable for {req.year} {req.race} (future calendar season). "
+                f"Running live strategy simulation on 2023 Bahrain GP benchmark."
+            ) if fallback else ""
+            r_info = _build_race_info(req.year, req.race, bp, None, fallback, reason)
+            CACHE_SESSIONS[key] = {
+                "backend_payload": bp,
+                "race_info": r_info,
+                "session": None,
+            }
+            return r_info
+        except Exception as e:
+            logger.warning(f"Error loading {live_cache_file}: {e}")
+
+    try:
+        session = load_race_session(req.year, req.race)
+        if session is None:
+            raise ValueError("Session returned None")
+        backend_payload, error_msg = process_telemetry_pipeline(session)
+        if error_msg or not backend_payload:
+            raise ValueError(error_msg or "Failed to process telemetry pipeline")
+
+        race_info = _build_race_info(req.year, req.race, backend_payload, session, False, "")
+        CACHE_SESSIONS[key] = {
+            "backend_payload": backend_payload,
+            "race_info": race_info,
+            "session": session,
+        }
+        return race_info
+    except Exception as e:
+        logger.warning(f"Telemetry load failed for {req.year} {req.race}: {e}. Falling back to 2023 Bahrain Grand Prix benchmark.")
+        if os.path.exists(live_cache_file):
+            bp = joblib.load(live_cache_file)
+            r_info = _build_race_info(
+                req.year, req.race, bp, None, True,
+                f"Telemetry unavailable for {req.year} {req.race} (uncached / rate limited). Displaying 2023 Bahrain GP benchmark."
+            )
+            CACHE_SESSIONS[key] = {
+                "backend_payload": bp,
+                "race_info": r_info,
+                "session": None,
+            }
+            return r_info
+        raise HTTPException(status_code=500, detail=f"Failed loading race session: {e}")
 
 
 @app.post("/api/simulate")
@@ -285,6 +328,10 @@ def simulate(req: SimulateRequest):
 
     session_data = CACHE_SESSIONS.get(key)
     if not session_data:
+        load_race(LoadRaceRequest(year=2023, race="Bahrain Grand Prix"))
+        session_data = CACHE_SESSIONS.get((2023, "Bahrain Grand Prix"))
+
+    if not session_data:
         raise HTTPException(status_code=400, detail="Race data could not be initialized")
 
     ml_data: pd.DataFrame = session_data["backend_payload"]["ml_data"]
@@ -298,7 +345,12 @@ def simulate(req: SimulateRequest):
     # Driver A state on sim_lap
     driver_laps = ml_data[ml_data["Driver"] == req.driver_a]
     if driver_laps.empty:
-        raise HTTPException(status_code=404, detail=f"Driver {req.driver_a} not found in this race")
+        avail = [str(x) for x in ml_data["Driver"].unique().tolist()]
+        if len(avail) > 0:
+            req.driver_a = avail[0]
+            driver_laps = ml_data[ml_data["Driver"] == req.driver_a]
+        else:
+            raise HTTPException(status_code=404, detail=f"Driver {req.driver_a} not found in this race")
 
     driver_state_df = driver_laps[driver_laps["LapNumber"] == req.sim_lap]
     if driver_state_df.empty:

@@ -1049,11 +1049,11 @@ export default function App() {
 
   useEffect(() => {
     executeLoadRace(year, selectedRace)
-  }, [])
+  }, [year, selectedRace, executeLoadRace])
 
   // Live Simulation Trigger
   useEffect(() => {
-    if (state !== 'active' || !raceData) return
+    if (!raceData) return
 
     fetch('/api/simulate', {
       method: 'POST',
@@ -1075,8 +1075,10 @@ export default function App() {
       .then((res: SimResult) => {
         setSimResult(res)
       })
-      .catch(() => {})
-  }, [year, selectedRace, driverA, driverB, pitLap, compound, rollouts, state, raceData])
+      .catch((err) => {
+        console.warn('Simulation request failed:', err)
+      })
+  }, [year, selectedRace, driverA, driverB, pitLap, compound, rollouts, raceData])
 
   // Race Review Data Loading
   useEffect(() => {
