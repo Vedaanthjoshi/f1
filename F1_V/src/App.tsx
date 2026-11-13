@@ -111,6 +111,10 @@ export type ReviewInitData = {
   fallback_reason?: string
   requested_year?: number
   requested_race?: string
+  initial_driver?: string
+  initial_regret?: RegretScanResult
+  initial_whatif?: WhatIfResult
+  initial_stint_deg?: StintDegResult
 }
 
 export type RegretScanRow = {
@@ -1083,9 +1087,21 @@ export default function App() {
       .then(r => r.json())
       .then((data: ReviewInitData) => {
         setReviewInit(data)
-        if (data.drivers && data.drivers.length > 0) {
-          const firstDrv = data.drivers[0].code
-          setReviewDriver(firstDrv)
+        if (data.initial_driver) {
+          setReviewDriver(data.initial_driver)
+        } else if (data.drivers && data.drivers.length > 0) {
+          setReviewDriver(data.drivers[0].code)
+        }
+        if (data.initial_regret) {
+          setRegretResult(data.initial_regret)
+          setRegretLoading(false)
+        }
+        if (data.initial_whatif) {
+          setWhatifResult(data.initial_whatif)
+          setWhatifLoading(false)
+        }
+        if (data.initial_stint_deg) {
+          setStintDegResult(data.initial_stint_deg)
         }
         setReviewLoading(false)
       })
@@ -1098,8 +1114,18 @@ export default function App() {
   useEffect(() => {
     if (dashboardMode !== 'review' || !reviewDriver) return
 
+    // Skip re-fetch if this exact driver & stop & rival_mode is already in regretResult
+    if (
+      regretResult &&
+      regretResult.driver === reviewDriver &&
+      regretResult.stop_idx === reviewStopIdx &&
+      (regretResult.rival_mode === rivalMode || !regretResult.rival_mode)
+    ) {
+      return
+    }
+
     setRegretLoading(true)
-    // 1. Regret scan (n_paths: 60 for fast responsive MC scan)
+    // 1. Regret scan (n_paths: 35 for responsive real-time MC scan)
     fetch('/api/race-review/regret-scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1109,7 +1135,7 @@ export default function App() {
         driver: reviewDriver,
         stop_idx: reviewStopIdx,
         rival_mode: rivalMode,
-        n_paths: 60,
+        n_paths: 35,
       })
     })
       .then(r => r.json())
@@ -1132,6 +1158,16 @@ export default function App() {
   useEffect(() => {
     if (dashboardMode !== 'review' || !reviewDriver) return
 
+    // Skip re-fetch if this exact shift & driver is already loaded
+    if (
+      whatifResult &&
+      whatifResult.driver === reviewDriver &&
+      whatifResult.stop_idx === reviewStopIdx &&
+      whatifResult.shift_laps === whatifShift
+    ) {
+      return
+    }
+
     setWhatifLoading(true)
     fetch('/api/race-review/whatif', {
       method: 'POST',
@@ -1143,7 +1179,7 @@ export default function App() {
         stop_idx: reviewStopIdx,
         shift_laps: whatifShift,
         rival_mode: rivalMode,
-        n_paths: 60,
+        n_paths: 35,
       })
     })
       .then(r => r.json())

@@ -1646,9 +1646,11 @@ def regret_scan(
     rival_mode: str = "fixed",
     circuit_physics: dict | None = None,
     overtaking_difficulty: str = "Medium",
+    shift_min: int = -8,
+    shift_max: int = 8,
 ) -> pd.DataFrame:
     """
-    Evaluate shifts from -12 to +12 laps for a driver's pit stop with dual-run robustness check.
+    Evaluate shifts from shift_min to shift_max laps for a driver's pit stop with dual-run robustness check.
     """
     rows = []
     base_res = run_whatif(
@@ -1671,7 +1673,7 @@ def regret_scan(
     )
     base_pos = base_res["position_per_lap"][-1] if len(base_res["position_per_lap"]) > 0 else 10.0
 
-    for shift in range(SHIFT_MIN, SHIFT_MAX + 1):
+    for shift in range(shift_min, shift_max + 1):
         # Run A: Nominal using G3 Controlled-Linear model for extrapolated increments (D5)
         res_a = run_whatif(
             replay_table=replay_table,
