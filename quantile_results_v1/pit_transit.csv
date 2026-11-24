@@ -1,0 +1,937 @@
+Season,Track,Driver,lap,estimate,actual
+2024,Abu Dhabi Grand Prix,BOT,5.0,24.2665,41.098
+2024,Abu Dhabi Grand Prix,STR,10.0,24.952,23.265
+2024,Abu Dhabi Grand Prix,MAG,11.0,24.952,26.412
+2024,Abu Dhabi Grand Prix,ZHO,11.0,24.952,22.978
+2024,Abu Dhabi Grand Prix,ALB,11.0,24.952,22.054
+2024,Abu Dhabi Grand Prix,HUL,12.0,24.2665,21.575
+2024,Abu Dhabi Grand Prix,ALO,12.0,24.2665,23.747
+2024,Abu Dhabi Grand Prix,GAS,13.0,23.581,21.987
+2024,Abu Dhabi Grand Prix,LEC,19.0,23.423000000000002,21.933
+2024,Abu Dhabi Grand Prix,TSU,21.0,23.265,21.809
+2024,Abu Dhabi Grand Prix,DOO,21.0,23.265,22.066
+2024,Abu Dhabi Grand Prix,LAW,22.0,23.265,23.456
+2024,Abu Dhabi Grand Prix,SAI,24.0,23.1215,21.393
+2024,Abu Dhabi Grand Prix,NOR,25.0,23.1215,21.406
+2024,Abu Dhabi Grand Prix,RUS,25.0,22.978,21.389
+2024,Abu Dhabi Grand Prix,VER,28.0,22.276,32.739
+2024,Abu Dhabi Grand Prix,MAG,28.0,22.276,21.64
+2024,Abu Dhabi Grand Prix,LAW,28.0,22.276,32.26
+2024,Abu Dhabi Grand Prix,PIA,31.0,22.609,32.798
+2024,Abu Dhabi Grand Prix,STR,31.0,22.609,22.01
+2024,Abu Dhabi Grand Prix,HAM,33.0,22.609,21.693
+2024,Abu Dhabi Grand Prix,ALO,36.0,22.486,22.35
+2024,Abu Dhabi Grand Prix,ZHO,38.0,22.418,28.854
+2024,Abu Dhabi Grand Prix,MAG,54.0,22.486,22.032
+2024,Australian Grand Prix,RIC,4.0,24.5,18.142
+2024,Australian Grand Prix,ALB,5.0,24.5,17.573
+2024,Australian Grand Prix,ZHO,5.0,24.5,18.945
+2024,Australian Grand Prix,HAM,6.0,18.142,17.543
+2024,Australian Grand Prix,MAG,6.0,18.142,18.213
+2024,Australian Grand Prix,RUS,7.0,18.142,17.943
+2024,Australian Grand Prix,STR,7.0,18.142,17.75
+2024,Australian Grand Prix,BOT,7.0,18.142,46.918
+2024,Australian Grand Prix,LEC,8.0,18.142,17.174
+2024,Australian Grand Prix,PIA,8.0,18.142,17.274
+2024,Australian Grand Prix,TSU,8.0,18.142,18.525
+2024,Australian Grand Prix,OCO,8.0,18.142,18.313
+2024,Australian Grand Prix,NOR,13.0,18.0425,17.822
+2024,Australian Grand Prix,PER,13.0,18.0425,17.96
+2024,Australian Grand Prix,SAI,15.0,17.951500000000003,17.519
+2024,Australian Grand Prix,OCO,15.0,17.951500000000003,30.508
+2024,Australian Grand Prix,ALO,16.0,17.943,18.141
+2024,Australian Grand Prix,HUL,16.0,17.943,18.218
+2024,Australian Grand Prix,GAS,16.0,17.943,20.245
+2024,Australian Grand Prix,ALB,26.0,18.141,17.614
+2024,Australian Grand Prix,RIC,28.0,18.0505,17.6
+2024,Australian Grand Prix,MAG,32.0,17.96,18.078
+2024,Australian Grand Prix,LEC,33.0,17.96,17.213
+2024,Australian Grand Prix,PER,34.0,17.96,17.19
+2024,Australian Grand Prix,HUL,34.0,17.96,18.102
+2024,Australian Grand Prix,ZHO,34.0,17.96,36.696
+2024,Australian Grand Prix,TSU,35.0,17.951500000000003,17.478
+2024,Australian Grand Prix,BOT,35.0,17.96,18.87
+2024,Australian Grand Prix,STR,36.0,18.019,17.83
+2024,Australian Grand Prix,PIA,38.0,17.96,18.426
+2024,Australian Grand Prix,NOR,39.0,17.96,17.621
+2024,Australian Grand Prix,SAI,40.0,18.019,17.705
+2024,Australian Grand Prix,ALO,40.0,17.96,17.816
+2024,Australian Grand Prix,GAS,40.0,17.96,17.575
+2024,Australian Grand Prix,OCO,41.0,17.943,17.794
+2024,Australian Grand Prix,RUS,44.0,17.83,17.795
+2024,Austrian Grand Prix,MAG,9.0,31.82,21.57
+2024,Austrian Grand Prix,RIC,9.0,31.82,21.439
+2024,Austrian Grand Prix,HUL,10.0,31.82,22.367
+2024,Austrian Grand Prix,ALO,10.0,31.82,21.438
+2024,Austrian Grand Prix,ALB,11.0,26.6375,21.729
+2024,Austrian Grand Prix,LEC,15.0,21.729,21.635
+2024,Austrian Grand Prix,OCO,18.0,21.682000000000002,22.306
+2024,Austrian Grand Prix,BOT,18.0,21.682000000000002,21.927
+2024,Austrian Grand Prix,GAS,19.0,21.682000000000002,21.413
+2024,Austrian Grand Prix,STR,19.0,21.682000000000002,21.476
+2024,Austrian Grand Prix,SAR,19.0,21.828,22.482
+2024,Austrian Grand Prix,HAM,20.0,21.828,21.653
+2024,Austrian Grand Prix,PER,20.0,21.828,21.086
+2024,Austrian Grand Prix,TSU,20.0,21.828,21.431
+2024,Austrian Grand Prix,RUS,21.0,21.682000000000002,21.596
+2024,Austrian Grand Prix,SAI,21.0,21.682000000000002,21.205
+2024,Austrian Grand Prix,VER,22.0,21.644,22.101
+2024,Austrian Grand Prix,NOR,22.0,21.644,21.518
+2024,Austrian Grand Prix,PIA,24.0,21.6155,20.996
+2024,Austrian Grand Prix,ZHO,27.0,21.596,23.164
+2024,Austrian Grand Prix,LEC,32.0,21.6155,22.234
+2024,Austrian Grand Prix,ALO,34.0,21.635,34.022
+2024,Austrian Grand Prix,RIC,36.0,21.644,20.914
+2024,Austrian Grand Prix,MAG,37.0,21.644,21.736
+2024,Austrian Grand Prix,HUL,38.0,21.635,21.75
+2024,Austrian Grand Prix,ALB,38.0,21.635,21.668
+2024,Austrian Grand Prix,GAS,41.0,21.6605,22.138
+2024,Austrian Grand Prix,BOT,41.0,21.6605,21.937
+2024,Austrian Grand Prix,OCO,42.0,21.6605,21.148
+2024,Austrian Grand Prix,STR,42.0,21.6605,21.526
+2024,Austrian Grand Prix,TSU,43.0,21.6985,23.496
+2024,Austrian Grand Prix,RUS,45.0,21.6605,21.298
+2024,Austrian Grand Prix,SAI,46.0,21.668,21.148
+2024,Austrian Grand Prix,SAR,48.0,21.653,22.162
+2024,Austrian Grand Prix,VER,50.0,21.653,25.918
+2024,Austrian Grand Prix,NOR,50.0,21.653,21.4
+2024,Austrian Grand Prix,PIA,50.0,21.653,20.693
+2024,Austrian Grand Prix,PER,50.0,21.653,27.56
+2024,Austrian Grand Prix,LEC,50.0,21.653,20.785
+2024,Austrian Grand Prix,ZHO,50.0,21.6605,21.538
+2024,Austrian Grand Prix,HAM,52.0,21.6605,27.276
+2024,Austrian Grand Prix,VER,63.0,21.653,22.743
+2024,Austrian Grand Prix,ALO,67.0,21.6605,22.507
+2024,Azerbaijan Grand Prix,COL,9.0,21.19,20.495
+2024,Azerbaijan Grand Prix,ALO,10.0,21.19,20.117
+2024,Azerbaijan Grand Prix,BOT,10.0,20.8425,20.082
+2024,Azerbaijan Grand Prix,VER,11.0,20.8425,21.047
+2024,Azerbaijan Grand Prix,RUS,11.0,20.8425,20.085
+2024,Azerbaijan Grand Prix,HAM,11.0,20.8425,21.302
+2024,Azerbaijan Grand Prix,TSU,11.0,20.495,20.969
+2024,Azerbaijan Grand Prix,PER,12.0,20.306,20.496
+2024,Azerbaijan Grand Prix,BEA,13.0,20.496,21.099
+2024,Azerbaijan Grand Prix,PIA,14.0,20.496,20.176
+2024,Azerbaijan Grand Prix,HUL,14.0,20.496,21.649
+2024,Azerbaijan Grand Prix,LEC,15.0,20.7325,20.867
+2024,Azerbaijan Grand Prix,SAI,16.0,20.7325,21.578
+2024,Azerbaijan Grand Prix,STR,21.0,20.918,20.157
+2024,Azerbaijan Grand Prix,ALB,30.0,20.867,20.333
+2024,Azerbaijan Grand Prix,ZHO,33.0,20.6815,20.46
+2024,Azerbaijan Grand Prix,VER,48.0,20.4955,20.665
+2024,Azerbaijan Grand Prix,RIC,48.0,20.4955,22.06
+2024,Azerbaijan Grand Prix,OCO,48.0,20.4955,20.62
+2024,Bahrain Grand Prix,ZHO,8.0,36.563,25.141
+2024,Bahrain Grand Prix,STR,8.0,36.563,24.354
+2024,Bahrain Grand Prix,SAR,9.0,36.563,35.725
+2024,Bahrain Grand Prix,OCO,9.0,36.563,24.691
+2024,Bahrain Grand Prix,PER,11.0,24.915999999999997,24.493
+2024,Bahrain Grand Prix,PIA,11.0,24.915999999999997,25.416
+2024,Bahrain Grand Prix,HAM,11.0,24.915999999999997,25.064
+2024,Bahrain Grand Prix,GAS,11.0,25.141,29.802
+2024,Bahrain Grand Prix,BOT,11.0,25.141,26.566
+2024,Bahrain Grand Prix,NOR,12.0,24.9535,24.11
+2024,Bahrain Grand Prix,RIC,12.0,24.9535,24.591
+2024,Bahrain Grand Prix,SAI,13.0,25.141,24.58
+2024,Bahrain Grand Prix,TSU,13.0,25.141,24.673
+2024,Bahrain Grand Prix,ALO,14.0,25.064,24.862
+2024,Bahrain Grand Prix,ALB,14.0,25.064,24.779
+2024,Bahrain Grand Prix,VER,16.0,24.779,25.088
+2024,Bahrain Grand Prix,HUL,19.0,24.8205,24.613
+2024,Bahrain Grand Prix,STR,26.0,24.779,24.42
+2024,Bahrain Grand Prix,ZHO,27.0,24.779,24.983
+2024,Bahrain Grand Prix,SAR,27.0,24.7725,25.143
+2024,Bahrain Grand Prix,OCO,29.0,24.779,25.13
+2024,Bahrain Grand Prix,BOT,29.0,24.779,74.951
+2024,Bahrain Grand Prix,RUS,30.0,24.8205,24.95
+2024,Bahrain Grand Prix,GAS,30.0,24.8205,26.536
+2024,Bahrain Grand Prix,MAG,31.0,24.95,24.557
+2024,Bahrain Grand Prix,NOR,32.0,24.9665,24.8
+2024,Bahrain Grand Prix,HAM,32.0,24.9665,24.119
+2024,Bahrain Grand Prix,LEC,33.0,24.95,24.081
+2024,Bahrain Grand Prix,PIA,33.0,24.95,24.794
+2024,Bahrain Grand Prix,TSU,33.0,24.906,24.598
+2024,Bahrain Grand Prix,SAI,34.0,24.862,23.886
+2024,Bahrain Grand Prix,RIC,34.0,24.8,24.769
+2024,Bahrain Grand Prix,PER,35.0,24.797,24.423
+2024,Bahrain Grand Prix,ALB,35.0,24.794,24.682
+2024,Bahrain Grand Prix,VER,36.0,24.794,24.218
+2024,Bahrain Grand Prix,ALO,40.0,24.769,25.061
+2024,Bahrain Grand Prix,SAR,39.0,24.769,25.429
+2024,Bahrain Grand Prix,HUL,40.0,24.769,24.333
+2024,Bahrain Grand Prix,GAS,42.0,24.774,25.107
+2024,Belgian Grand Prix,HUL,6.0,24.5,23.557
+2024,Belgian Grand Prix,ALB,7.0,24.5,23.493
+2024,Belgian Grand Prix,RIC,7.0,24.5,22.657
+2024,Belgian Grand Prix,SAR,7.0,24.5,23.267
+2024,Belgian Grand Prix,GAS,8.0,23.557,23.017
+2024,Belgian Grand Prix,RUS,9.0,23.38,22.684
+2024,Belgian Grand Prix,VER,9.0,23.38,23.137
+2024,Belgian Grand Prix,HAM,10.0,23.267,23.198
+2024,Belgian Grand Prix,PER,10.0,23.267,22.637
+2024,Belgian Grand Prix,PIA,10.0,23.267,22.684
+2024,Belgian Grand Prix,BOT,10.0,23.267,23.196
+2024,Belgian Grand Prix,LEC,11.0,23.137,23.377
+2024,Belgian Grand Prix,OCO,11.0,23.137,23.447
+2024,Belgian Grand Prix,STR,11.0,23.137,22.884
+2024,Belgian Grand Prix,ALO,12.0,23.137,23.116
+2024,Belgian Grand Prix,NOR,14.0,23.137,22.747
+2024,Belgian Grand Prix,TSU,14.0,23.137,23.423
+2024,Belgian Grand Prix,MAG,16.0,23.137,23.58
+2024,Belgian Grand Prix,SAI,19.0,23.1665,22.916
+2024,Belgian Grand Prix,HUL,19.0,23.1665,23.339
+2024,Belgian Grand Prix,PER,20.0,23.1665,22.552
+2024,Belgian Grand Prix,RIC,20.0,23.137,22.231
+2024,Belgian Grand Prix,ALB,22.0,23.1265,22.88
+2024,Belgian Grand Prix,SAR,23.0,23.1265,23.574
+2024,Belgian Grand Prix,LEC,24.0,23.116,23.394
+2024,Belgian Grand Prix,HAM,25.0,23.1265,22.665
+2024,Belgian Grand Prix,VER,27.0,23.1265,22.928
+2024,Belgian Grand Prix,SAI,27.0,23.1265,23.028
+2024,Belgian Grand Prix,GAS,27.0,23.1265,22.862
+2024,Belgian Grand Prix,NOR,28.0,23.1265,22.613
+2024,Belgian Grand Prix,PIA,29.0,23.028,24.244
+2024,Belgian Grand Prix,OCO,29.0,23.0225,23.504
+2024,Belgian Grand Prix,BOT,34.0,23.072,23.076
+2024,Belgian Grand Prix,PER,41.0,23.076,22.716
+2024,British Grand Prix,ZHO,11.0,24.5,29.143
+2024,British Grand Prix,PER,46.0,29.434,28.895
+2024,British Grand Prix,SAI,49.0,29.406,28.671
+2024,Chinese Grand Prix,HUL,7.0,24.5,22.995
+2024,Chinese Grand Prix,TSU,7.0,24.5,23.059
+2024,Chinese Grand Prix,ZHO,7.0,24.5,23.244
+2024,Chinese Grand Prix,STR,8.0,24.5,23.783
+2024,Chinese Grand Prix,BOT,8.0,24.5,22.97
+2024,Chinese Grand Prix,OCO,8.0,24.5,22.984
+2024,Chinese Grand Prix,ALB,8.0,24.5,23.177
+2024,Chinese Grand Prix,HAM,8.0,24.5,22.348
+2024,Chinese Grand Prix,ALO,10.0,23.027,22.927
+2024,Chinese Grand Prix,RUS,10.0,23.027,22.462
+2024,Chinese Grand Prix,GAS,10.0,23.027,39.612
+2024,Chinese Grand Prix,SAR,11.0,23.027,23.225
+2024,Chinese Grand Prix,VER,12.0,22.995,22.572
+2024,Chinese Grand Prix,PER,12.0,22.995,21.957
+2024,Chinese Grand Prix,RIC,13.0,22.9895,22.652
+2024,Chinese Grand Prix,PIA,15.0,22.984,22.614
+2024,Chinese Grand Prix,SAI,16.0,22.984,22.55
+2024,Chinese Grand Prix,MAG,16.0,22.984,22.913
+2024,Chinese Grand Prix,STR,34.0,22.9175,34.703
+2024,Chinese Grand Prix,GAS,37.0,22.922,22.729
+2024,Chinese Grand Prix,ZHO,39.0,22.9175,23.285
+2024,Chinese Grand Prix,ALO,42.0,22.922,23.157
+2024,Dutch Grand Prix,ALB,11.0,24.5,21.282
+2024,Dutch Grand Prix,HUL,13.0,21.282,21.731
+2024,Dutch Grand Prix,TSU,13.0,21.282,21.192
+2024,Dutch Grand Prix,BOT,14.0,21.282,20.739
+2024,Dutch Grand Prix,ZHO,17.0,21.237000000000002,21.17
+2024,Dutch Grand Prix,SAR,21.0,21.192,22.098
+2024,Dutch Grand Prix,HAM,22.0,21.192,21.146
+2024,Dutch Grand Prix,LEC,23.0,21.237000000000002,20.821
+2024,Dutch Grand Prix,RUS,24.0,21.192,21.656
+2024,Dutch Grand Prix,VER,26.0,21.192,20.749
+2024,Dutch Grand Prix,NOR,27.0,21.192,21.52
+2024,Dutch Grand Prix,PER,28.0,21.181,22.992
+2024,Dutch Grand Prix,RIC,28.0,21.192,20.706
+2024,Dutch Grand Prix,SAI,29.0,21.192,20.686
+2024,Dutch Grand Prix,STR,29.0,21.237000000000002,21.642
+2024,Dutch Grand Prix,OCO,29.0,21.237000000000002,21.033
+2024,Dutch Grand Prix,ALO,30.0,21.192,21.279
+2024,Dutch Grand Prix,GAS,31.0,21.181,22.581
+2024,Dutch Grand Prix,TSU,31.0,21.181,20.916
+2024,Dutch Grand Prix,PIA,32.0,21.192,21.079
+2024,Dutch Grand Prix,MAG,39.0,21.181,21.391
+2024,Dutch Grand Prix,BOT,42.0,21.192,21.156
+2024,Dutch Grand Prix,HAM,47.0,21.181,21.091
+2024,Dutch Grand Prix,ZHO,50.0,21.17,22.026
+2024,Dutch Grand Prix,RUS,53.0,21.181,21.055
+2024,Dutch Grand Prix,ALB,53.0,21.181,20.949
+2024,Emilia Romagna Grand Prix,ALO,6.0,24.5,31.355
+2024,Emilia Romagna Grand Prix,ALB,7.0,24.5,30.173
+2024,Emilia Romagna Grand Prix,GAS,7.0,24.5,30.119
+2024,Emilia Romagna Grand Prix,BOT,7.0,24.5,30.274
+2024,Emilia Romagna Grand Prix,RIC,10.0,30.2235,30.128
+2024,Emilia Romagna Grand Prix,TSU,11.0,30.274,29.763
+2024,Emilia Romagna Grand Prix,HUL,12.0,30.2235,29.807
+2024,Emilia Romagna Grand Prix,RUS,20.0,30.1505,29.767
+2024,Emilia Romagna Grand Prix,NOR,21.0,30.1505,29.843
+2024,Emilia Romagna Grand Prix,PIA,22.0,30.128,29.721
+2024,Emilia Romagna Grand Prix,VER,23.0,30.1235,30.289
+2024,Emilia Romagna Grand Prix,ALB,22.0,30.119,38.395
+2024,Emilia Romagna Grand Prix,LEC,24.0,30.119,30.232
+2024,Emilia Romagna Grand Prix,OCO,24.0,30.1235,30.67
+2024,Emilia Romagna Grand Prix,SAI,26.0,30.173,30.464
+2024,Emilia Romagna Grand Prix,HAM,26.0,30.173,29.603
+2024,Emilia Romagna Grand Prix,ALB,27.0,30.173,31.082
+2024,Emilia Romagna Grand Prix,GAS,29.0,30.173,30.576
+2024,Emilia Romagna Grand Prix,SAR,30.0,30.2025,31.082
+2024,Emilia Romagna Grand Prix,ZHO,32.0,30.253,30.2
+2024,Emilia Romagna Grand Prix,PER,36.0,30.232,29.571
+2024,Emilia Romagna Grand Prix,STR,36.0,30.232,30.128
+2024,Emilia Romagna Grand Prix,MAG,36.0,30.232,31.311
+2024,Emilia Romagna Grand Prix,ALO,39.0,30.216,30.475
+2024,Emilia Romagna Grand Prix,RUS,51.0,30.232,29.707
+2024,Emilia Romagna Grand Prix,ALO,58.0,30.216,29.94
+2024,Hungarian Grand Prix,ALB,5.0,22.364,22.081
+2024,Hungarian Grand Prix,MAG,5.0,22.364,21.891
+2024,Hungarian Grand Prix,OCO,5.0,22.364,21.942
+2024,Hungarian Grand Prix,ALO,6.0,22.364,22.538
+2024,Hungarian Grand Prix,RIC,6.0,22.364,21.08
+2024,Hungarian Grand Prix,ZHO,6.0,22.364,21.931
+2024,Hungarian Grand Prix,SAR,7.0,22.011499999999998,21.682
+2024,Hungarian Grand Prix,STR,13.0,21.936500000000002,23.375
+2024,Hungarian Grand Prix,HAM,15.0,21.942,21.313
+2024,Hungarian Grand Prix,BOT,15.0,21.942,22.136
+2024,Hungarian Grand Prix,NOR,16.0,21.942,21.726
+2024,Hungarian Grand Prix,PIA,17.0,21.942,21.672
+2024,Hungarian Grand Prix,VER,20.0,21.931,22.243
+2024,Hungarian Grand Prix,SAI,20.0,21.931,21.545
+2024,Hungarian Grand Prix,LEC,22.0,21.931,21.872
+2024,Hungarian Grand Prix,PER,27.0,21.911,21.323
+2024,Hungarian Grand Prix,GAS,27.0,21.911,21.397
+2024,Hungarian Grand Prix,RIC,27.0,21.911,21.394
+2024,Hungarian Grand Prix,TSU,28.0,21.911,21.478
+2024,Hungarian Grand Prix,HUL,28.0,21.911,22.566
+2024,Hungarian Grand Prix,ALB,28.0,21.911,23.581
+2024,Hungarian Grand Prix,OCO,29.0,21.799,21.375
+2024,Hungarian Grand Prix,RUS,32.0,21.872,21.376
+2024,Hungarian Grand Prix,SAR,32.0,21.872,21.421
+2024,Hungarian Grand Prix,MAG,33.0,21.872,22.485
+2024,Hungarian Grand Prix,ZHO,35.0,21.799,22.177
+2024,Hungarian Grand Prix,ALO,36.0,21.799,21.879
+2024,Hungarian Grand Prix,HAM,39.0,21.875500000000002,21.93
+2024,Hungarian Grand Prix,LEC,39.0,21.875500000000002,21.653
+2024,Hungarian Grand Prix,NOR,44.0,21.875500000000002,21.279
+2024,Hungarian Grand Prix,STR,44.0,21.875500000000002,22.378
+2024,Hungarian Grand Prix,BOT,44.0,21.875500000000002,21.897
+2024,Hungarian Grand Prix,PIA,46.0,21.875500000000002,21.856
+2024,Hungarian Grand Prix,SAI,46.0,21.879,21.487
+2024,Hungarian Grand Prix,PER,46.0,21.879,21.06
+2024,Hungarian Grand Prix,VER,48.0,21.864,21.329
+2024,Hungarian Grand Prix,RUS,52.0,21.856,21.315
+2024,Hungarian Grand Prix,SAR,62.0,21.791,21.875
+2024,Hungarian Grand Prix,OCO,63.0,21.791,21.169
+2024,Italian Grand Prix,HUL,4.0,24.5,38.845
+2024,Italian Grand Prix,GAS,9.0,38.845,24.419
+2024,Italian Grand Prix,RUS,10.0,38.845,32.727
+2024,Italian Grand Prix,RIC,10.0,38.845,30.393
+2024,Italian Grand Prix,ALO,11.0,31.631999999999998,24.875
+2024,Italian Grand Prix,NOR,13.0,30.393,24.172
+2024,Italian Grand Prix,MAG,13.0,30.393,25.669
+2024,Italian Grand Prix,LEC,14.0,30.393,24.419
+2024,Italian Grand Prix,HAM,14.0,30.393,24.789
+2024,Italian Grand Prix,ZHO,14.0,27.634,27.245
+2024,Italian Grand Prix,PIA,15.0,25.669,23.763
+2024,Italian Grand Prix,COL,15.0,25.272,25.187
+2024,Italian Grand Prix,ALB,16.0,25.272,24.8
+2024,Italian Grand Prix,SAI,18.0,24.875,24.316
+2024,Italian Grand Prix,STR,18.0,24.875,25.055
+2024,Italian Grand Prix,VER,21.0,24.875,28.085
+2024,Italian Grand Prix,PER,22.0,24.875,24.602
+2024,Italian Grand Prix,GAS,29.0,24.875,24.182
+2024,Italian Grand Prix,OCO,30.0,24.875,24.194
+2024,Italian Grand Prix,NOR,31.0,24.8375,24.864
+2024,Italian Grand Prix,HUL,31.0,24.8375,36.564
+2024,Italian Grand Prix,RUS,32.0,24.832,26.309
+2024,Italian Grand Prix,BOT,32.0,24.832,24.475
+2024,Italian Grand Prix,PER,34.0,24.864,24.009
+2024,Italian Grand Prix,ALO,34.0,24.864,24.561
+2024,Italian Grand Prix,STR,35.0,24.832,24.3
+2024,Italian Grand Prix,HAM,36.0,24.8,24.154
+2024,Italian Grand Prix,PIA,37.0,24.8,24.777
+2024,Italian Grand Prix,VER,40.0,24.783,23.952
+2024,Italian Grand Prix,STR,49.0,24.777,25.232
+2024,Las Vegas Grand Prix,ALO,3.0,24.5,21.321
+2024,Las Vegas Grand Prix,LEC,8.0,21.321,21.274
+2024,Las Vegas Grand Prix,NOR,8.0,21.321,21.088
+2024,Las Vegas Grand Prix,ALB,8.0,21.321,22.092
+2024,Las Vegas Grand Prix,STR,8.0,21.321,34.785
+2024,Las Vegas Grand Prix,SAI,9.0,21.321,21.116
+2024,Las Vegas Grand Prix,GAS,9.0,21.321,22.457
+2024,Las Vegas Grand Prix,TSU,9.0,21.321,21.289
+2024,Las Vegas Grand Prix,PIA,9.0,21.321,27.791
+2024,Las Vegas Grand Prix,VER,10.0,21.321,20.77
+2024,Las Vegas Grand Prix,OCO,10.0,21.321,15.747
+2024,Las Vegas Grand Prix,ZHO,10.0,21.321,22.978
+2024,Las Vegas Grand Prix,LAW,10.0,21.321,21.241
+2024,Las Vegas Grand Prix,RUS,11.0,21.321,20.979
+2024,Las Vegas Grand Prix,HAM,12.0,21.289,21.031
+2024,Las Vegas Grand Prix,HUL,13.0,21.274,21.555
+2024,Las Vegas Grand Prix,COL,15.0,21.274,21.141
+2024,Las Vegas Grand Prix,PER,16.0,21.274,21.42
+2024,Las Vegas Grand Prix,MAG,16.0,21.274,21.967
+2024,Las Vegas Grand Prix,BOT,16.0,21.274,21.328
+2024,Las Vegas Grand Prix,ALO,23.0,21.289,21.504
+2024,Las Vegas Grand Prix,PIA,24.0,21.289,21.184
+2024,Las Vegas Grand Prix,COL,25.0,21.305,21.247
+2024,Las Vegas Grand Prix,VER,26.0,21.289,22.289
+2024,Las Vegas Grand Prix,HAM,26.0,21.289,21.411
+2024,Las Vegas Grand Prix,SAI,27.0,21.2815,20.841
+2024,Las Vegas Grand Prix,STR,27.0,21.305,21.609
+2024,Las Vegas Grand Prix,TSU,28.0,21.305,21.208
+2024,Las Vegas Grand Prix,NOR,29.0,21.305,20.662
+2024,Las Vegas Grand Prix,LEC,30.0,21.289,21.612
+2024,Las Vegas Grand Prix,RUS,31.0,21.2815,21.007
+2024,Las Vegas Grand Prix,PER,31.0,21.289,21.209
+2024,Las Vegas Grand Prix,HUL,32.0,21.2815,21.623
+2024,Las Vegas Grand Prix,ZHO,33.0,21.274,21.7
+2024,Las Vegas Grand Prix,BOT,34.0,21.2815,22.789
+2024,Las Vegas Grand Prix,LAW,37.0,21.305,20.625
+2024,Las Vegas Grand Prix,OCO,44.0,21.289,21.922
+2024,Las Vegas Grand Prix,NOR,47.0,21.305,21.213
+2024,Mexico City Grand Prix,PER,19.0,24.5,27.648
+2024,Mexico City Grand Prix,VER,25.0,27.648,43.744
+2024,Mexico City Grand Prix,STR,25.0,27.648,22.556
+2024,Mexico City Grand Prix,HAM,27.0,27.648,22.492
+2024,Mexico City Grand Prix,GAS,27.0,27.648,23.278
+2024,Mexico City Grand Prix,HUL,28.0,27.648,23.15
+2024,Mexico City Grand Prix,NOR,29.0,23.278,22.088
+2024,Mexico City Grand Prix,MAG,29.0,23.278,23.478
+2024,Mexico City Grand Prix,LEC,30.0,23.214,22.818
+2024,Mexico City Grand Prix,RUS,30.0,23.214,22.606
+2024,Mexico City Grand Prix,SAI,31.0,23.214,22.249
+2024,Mexico City Grand Prix,PIA,38.0,22.818,21.789
+2024,Mexico City Grand Prix,LAW,38.0,22.818,22.443
+2024,Mexico City Grand Prix,ZHO,42.0,22.606,22.933
+2024,Mexico City Grand Prix,PER,42.0,22.606,22.107
+2024,Mexico City Grand Prix,COL,46.0,22.606,23.949
+2024,Mexico City Grand Prix,OCO,47.0,22.606,23.223
+2024,Mexico City Grand Prix,BOT,48.0,22.712000000000003,22.596
+2024,Mexico City Grand Prix,LAW,64.0,22.712000000000003,30.2
+2024,Mexico City Grand Prix,LEC,68.0,22.818,22.827
+2024,Mexico City Grand Prix,PER,67.0,22.818,21.908
+2024,Miami Grand Prix,ALB,9.0,24.5,22.68
+2024,Miami Grand Prix,STR,10.0,24.5,23.015
+2024,Miami Grand Prix,SAR,10.0,24.5,22.529
+2024,Miami Grand Prix,BOT,10.0,24.5,23.696
+2024,Miami Grand Prix,HUL,11.0,22.68,23.08
+2024,Miami Grand Prix,GAS,11.0,22.68,22.522
+2024,Miami Grand Prix,PER,16.0,22.8475,21.742
+2024,Miami Grand Prix,LEC,18.0,22.68,21.795
+2024,Miami Grand Prix,OCO,21.0,22.6045,22.743
+2024,Miami Grand Prix,ALO,21.0,22.6045,22.358
+2024,Miami Grand Prix,MAG,21.0,22.6045,23.29
+2024,Miami Grand Prix,VER,22.0,22.6045,22.249
+2024,Miami Grand Prix,HAM,25.0,22.68,22.135
+2024,Miami Grand Prix,PIA,26.0,22.68,22.158
+2024,Miami Grand Prix,SAI,26.0,22.68,23.091
+2024,Miami Grand Prix,PER,27.0,22.6045,22.518
+2024,Miami Grand Prix,TSU,27.0,22.6045,22.233
+2024,Miami Grand Prix,ZHO,27.0,22.6045,23.025
+2024,Miami Grand Prix,RIC,27.0,22.6045,22.635
+2024,Miami Grand Prix,HUL,27.0,22.6045,22.521
+2024,Miami Grand Prix,STR,27.0,22.6045,22.661
+2024,Miami Grand Prix,MAG,27.0,22.6045,29.655
+2024,Miami Grand Prix,PIA,39.0,22.648000000000003,30.25
+2024,Miami Grand Prix,ALB,52.0,22.661,22.446
+2024,Qatar Grand Prix,STR,6.0,31.433999999999997,42.02
+2024,Qatar Grand Prix,RUS,22.0,32.992,32.301
+2024,Qatar Grand Prix,BOT,23.0,32.6465,28.96
+2024,Qatar Grand Prix,MAG,26.0,32.301,28.596
+2024,Qatar Grand Prix,HUL,30.0,31.088500000000003,28.342
+2024,Qatar Grand Prix,PIA,33.0,29.876,27.673
+2024,Qatar Grand Prix,SAI,33.0,29.876,36.129
+2024,Qatar Grand Prix,HAM,33.0,29.876,37.996
+2024,Qatar Grand Prix,VER,34.0,29.876,28.317
+2024,Qatar Grand Prix,NOR,34.0,29.876,28.067
+2024,Qatar Grand Prix,LEC,34.0,29.876,28.431
+2024,Qatar Grand Prix,PER,34.0,29.876,28.035
+2024,Qatar Grand Prix,GAS,34.0,29.418,28.838
+2024,Qatar Grand Prix,RUS,34.0,29.418,27.797
+2024,Qatar Grand Prix,ALO,34.0,29.418,28.754
+2024,Qatar Grand Prix,ZHO,34.0,29.418,29.774
+2024,Qatar Grand Prix,TSU,34.0,29.418,28.906
+2024,Qatar Grand Prix,ALB,34.0,29.418,29.272
+2024,Qatar Grand Prix,LAW,34.0,29.876,45.045
+2024,Qatar Grand Prix,NOR,44.0,28.754,36.023
+2024,Qatar Grand Prix,HAM,46.0,28.796,22.735
+2024,Qatar Grand Prix,ALB,54.0,28.754,39.621
+2024,Saudi Arabian Grand Prix,VER,6.0,24.5,20.668
+2024,Saudi Arabian Grand Prix,PER,6.0,24.5,22.243
+2024,Saudi Arabian Grand Prix,LEC,6.0,24.5,23.374
+2024,Saudi Arabian Grand Prix,PIA,6.0,24.5,21.379
+2024,Saudi Arabian Grand Prix,HUL,32.0,22.2415,21.107
+2024,Saudi Arabian Grand Prix,BOT,34.0,22.24,23.262
+2024,Saudi Arabian Grand Prix,HAM,35.0,22.24,20.236
+2024,Saudi Arabian Grand Prix,NOR,36.0,22.2415,22.266
+2024,Saudi Arabian Grand Prix,ZHO,40.0,22.2415,46.349
+2024,Singapore Grand Prix,RIC,9.0,24.5,30.365
+2024,Singapore Grand Prix,ALB,10.0,24.5,29.116
+2024,Singapore Grand Prix,SAI,12.0,29.740499999999997,29.389
+2024,Singapore Grand Prix,HAM,16.0,29.389,29.278
+2024,Singapore Grand Prix,ALO,24.0,29.3335,29.682
+2024,Singapore Grand Prix,STR,25.0,29.3335,29.729
+2024,Singapore Grand Prix,RUS,26.0,29.389,28.713
+2024,Singapore Grand Prix,PER,27.0,29.5355,29.077
+2024,Singapore Grand Prix,MAG,27.0,29.389,29.532
+2024,Singapore Grand Prix,VER,28.0,29.389,29.681
+2024,Singapore Grand Prix,HUL,28.0,29.389,29.661
+2024,Singapore Grand Prix,COL,28.0,29.389,29.954
+2024,Singapore Grand Prix,OCO,28.0,29.389,29.677
+2024,Singapore Grand Prix,NOR,29.0,29.3335,28.984
+2024,Singapore Grand Prix,TSU,32.0,29.5965,29.8
+2024,Singapore Grand Prix,BOT,32.0,29.5965,30.611
+2024,Singapore Grand Prix,ZHO,33.0,29.5965,29.552
+2024,Singapore Grand Prix,LEC,35.0,29.661,29.115
+2024,Singapore Grand Prix,GAS,36.0,29.6065,31.669
+2024,Singapore Grand Prix,PIA,37.0,29.6065,29.1
+2024,Singapore Grand Prix,RIC,45.0,29.6065,29.168
+2024,Singapore Grand Prix,MAG,48.0,29.552,31.156
+2024,Singapore Grand Prix,RIC,57.0,29.6065,29.675
+2024,Spanish Grand Prix,ZHO,8.0,24.5,22.465
+2024,Spanish Grand Prix,TSU,8.0,24.5,22.003
+2024,Spanish Grand Prix,MAG,9.0,24.5,23.386
+2024,Spanish Grand Prix,BOT,10.0,22.234,22.747
+2024,Spanish Grand Prix,HUL,11.0,22.465,22.646
+2024,Spanish Grand Prix,OCO,12.0,22.606,21.859
+2024,Spanish Grand Prix,PER,12.0,22.606,22.185
+2024,Spanish Grand Prix,GAS,13.0,22.646,26.1
+2024,Spanish Grand Prix,SAR,13.0,22.646,22.414
+2024,Spanish Grand Prix,RUS,14.0,22.465,24.925
+2024,Spanish Grand Prix,SAI,14.0,22.465,22.31
+2024,Spanish Grand Prix,HAM,15.0,22.465,21.97
+2024,Spanish Grand Prix,RIC,15.0,22.465,22.253
+2024,Spanish Grand Prix,VER,16.0,22.465,21.593
+2024,Spanish Grand Prix,STR,16.0,22.465,21.792
+2024,Spanish Grand Prix,ALB,17.0,22.362000000000002,23.183
+2024,Spanish Grand Prix,ALO,18.0,22.31,21.891
+2024,Spanish Grand Prix,PIA,20.0,22.31,22.144
+2024,Spanish Grand Prix,NOR,22.0,22.2815,21.442
+2024,Spanish Grand Prix,LEC,23.0,22.2815,22.276
+2024,Spanish Grand Prix,TSU,26.0,22.264499999999998,22.068
+2024,Spanish Grand Prix,BOT,27.0,22.264499999999998,23.082
+2024,Spanish Grand Prix,MAG,28.0,22.253,28.754
+2024,Spanish Grand Prix,PER,30.0,22.276,21.355
+2024,Spanish Grand Prix,SAR,33.0,22.264499999999998,22.435
+2024,Spanish Grand Prix,RUS,35.0,22.264499999999998,22.773
+2024,Spanish Grand Prix,SAI,35.0,22.264499999999998,22.133
+2024,Spanish Grand Prix,OCO,36.0,22.276,22.002
+2024,Spanish Grand Prix,STR,36.0,22.276,23.394
+2024,Spanish Grand Prix,GAS,37.0,22.276,21.615
+2024,Spanish Grand Prix,HUL,37.0,22.276,22.544
+2024,Spanish Grand Prix,ZHO,40.0,22.276,24.245
+2024,Spanish Grand Prix,RIC,41.0,22.276,22.14
+2024,Spanish Grand Prix,HAM,42.0,22.293,21.276
+2024,Spanish Grand Prix,VER,43.0,22.293,22.381
+2024,Spanish Grand Prix,ALB,42.0,22.293,21.783
+2024,Spanish Grand Prix,TSU,43.0,22.264499999999998,22.548
+2024,Spanish Grand Prix,ALO,44.0,22.264499999999998,22.466
+2024,Spanish Grand Prix,PIA,45.0,22.264499999999998,22.511
+2024,Spanish Grand Prix,NOR,46.0,22.276,22.628
+2024,Spanish Grand Prix,LEC,46.0,22.293,21.589
+2024,Spanish Grand Prix,PER,48.0,22.31,21.437
+2024,United States Grand Prix,ZHO,12.0,34.92,24.398
+2024,United States Grand Prix,BOT,14.0,29.659,24.462
+2024,United States Grand Prix,MAG,16.0,24.462,24.034
+2024,United States Grand Prix,GAS,17.0,24.462,28.191
+2024,United States Grand Prix,TSU,17.0,24.462,24.39
+2024,United States Grand Prix,SAI,20.0,24.43,24.023
+2024,United States Grand Prix,VER,24.0,24.398,24.392
+2024,United States Grand Prix,LEC,25.0,24.398,23.87
+2024,United States Grand Prix,PER,25.0,24.395,23.617
+2024,United States Grand Prix,ALO,25.0,24.395,24.327
+2024,United States Grand Prix,HUL,26.0,24.392,24.218
+2024,United States Grand Prix,STR,26.0,24.391,26.493
+2024,United States Grand Prix,NOR,30.0,24.39,23.805
+2024,United States Grand Prix,OCO,30.0,24.39,24.078
+2024,United States Grand Prix,PIA,31.0,24.39,24.194
+2024,United States Grand Prix,ALB,32.0,24.2725,24.373
+2024,United States Grand Prix,ZHO,34.0,24.327,24.911
+2024,United States Grand Prix,LAW,35.0,24.327,23.977
+2024,United States Grand Prix,MAG,37.0,24.327,24.01
+2024,United States Grand Prix,COL,38.0,24.327,24.024
+2024,United States Grand Prix,RUS,39.0,24.2725,29.4
+2024,United States Grand Prix,OCO,50.0,24.2725,26.188
+2025,Australian Grand Prix,NOR,43.0,15.145,17.905
+2025,Australian Grand Prix,PIA,43.0,15.145,19.751
+2025,Australian Grand Prix,RUS,43.0,15.145,19.44
+2025,Australian Grand Prix,ALB,43.0,15.145,18.832
+2025,Australian Grand Prix,ANT,43.0,15.145,21.968
+2025,Australian Grand Prix,STR,43.0,15.145,18.924
+2025,Australian Grand Prix,HUL,43.0,15.145,20.163
+2025,Australian Grand Prix,BOR,43.0,15.145,26.069
+2025,Austrian Grand Prix,BEA,10.0,21.224,21.984
+2025,Austrian Grand Prix,GAS,11.0,21.224,21.965
+2025,Austrian Grand Prix,HUL,11.0,21.224,21.188
+2025,Austrian Grand Prix,ALB,12.0,21.604,21.28
+2025,Austrian Grand Prix,COL,12.0,21.604,22.969
+2025,Austrian Grand Prix,RUS,17.0,21.622500000000002,21.373
+2025,Austrian Grand Prix,TSU,17.0,21.622500000000002,21.564
+2025,Austrian Grand Prix,OCO,18.0,21.622500000000002,23.074
+2025,Austrian Grand Prix,NOR,19.0,21.4685,21.961
+2025,Austrian Grand Prix,BOR,20.0,21.564,21.539
+2025,Austrian Grand Prix,PIA,23.0,21.564,22.677
+2025,Austrian Grand Prix,LEC,24.0,21.564,21.363
+2025,Austrian Grand Prix,HAM,25.0,21.7625,21.32
+2025,Austrian Grand Prix,STR,25.0,21.564,22.906
+2025,Austrian Grand Prix,HAD,27.0,21.564,21.596
+2025,Austrian Grand Prix,TSU,29.0,21.58,30.067
+2025,Austrian Grand Prix,LAW,31.0,21.596,21.377
+2025,Austrian Grand Prix,ALO,32.0,21.596,21.879
+2025,Austrian Grand Prix,GAS,37.0,21.596,22.172
+2025,Austrian Grand Prix,BEA,38.0,21.596,21.781
+2025,Austrian Grand Prix,COL,38.0,21.596,21.202
+2025,Austrian Grand Prix,HUL,41.0,21.688499999999998,21.064
+2025,Austrian Grand Prix,RUS,44.0,21.596,21.841
+2025,Austrian Grand Prix,LEC,48.0,21.688499999999998,21.288
+2025,Austrian Grand Prix,BOR,48.0,21.688499999999998,21.237
+2025,Austrian Grand Prix,HAM,49.0,21.688499999999998,21.272
+2025,Austrian Grand Prix,OCO,49.0,21.596,22.324
+2025,Austrian Grand Prix,NOR,51.0,21.564,21.358
+2025,Austrian Grand Prix,PIA,52.0,21.58,21.077
+2025,Austrian Grand Prix,STR,52.0,21.564,21.652
+2025,Austrian Grand Prix,TSU,59.0,21.564,32.9
+2025,Azerbaijan Grand Prix,ALB,14.0,20.75,20.61
+2025,Azerbaijan Grand Prix,COL,15.0,20.75,21.145
+2025,Azerbaijan Grand Prix,ALO,20.0,20.738,25.681
+2025,Azerbaijan Grand Prix,BOR,25.0,20.738,20.793
+2025,Azerbaijan Grand Prix,SAI,26.0,20.738,20.498
+2025,Azerbaijan Grand Prix,BEA,27.0,20.738,21.235
+2025,Azerbaijan Grand Prix,HAD,28.0,20.738,20.357
+2025,Azerbaijan Grand Prix,GAS,34.0,20.738,21.667
+2025,Azerbaijan Grand Prix,HAM,35.0,20.738,20.056
+2025,Azerbaijan Grand Prix,HUL,35.0,20.738,20.015
+2025,Azerbaijan Grand Prix,NOR,36.0,20.744,21.934
+2025,Azerbaijan Grand Prix,STR,36.0,20.738,21.786
+2025,Azerbaijan Grand Prix,TSU,37.0,20.698,20.264
+2025,Azerbaijan Grand Prix,RUS,38.0,20.744,19.911
+2025,Azerbaijan Grand Prix,VER,39.0,20.738,20.28
+2025,Bahrain Grand Prix,HUL,4.0,24.5,24.103
+2025,Bahrain Grand Prix,HAD,5.0,24.5,25.285
+2025,Bahrain Grand Prix,OCO,7.0,24.694000000000003,24.947
+2025,Bahrain Grand Prix,DOO,8.0,24.694000000000003,24.805
+2025,Bahrain Grand Prix,NOR,9.0,24.947,29.615
+2025,Bahrain Grand Prix,GAS,9.0,24.947,25.022
+2025,Bahrain Grand Prix,VER,9.0,24.947,26.526
+2025,Bahrain Grand Prix,TSU,10.0,24.875999999999998,26.466
+2025,Bahrain Grand Prix,ANT,11.0,25.022,24.859
+2025,Bahrain Grand Prix,STR,11.0,25.022,24.603
+2025,Bahrain Grand Prix,RUS,12.0,25.1535,23.939
+2025,Bahrain Grand Prix,BOR,12.0,25.1535,24.069
+2025,Bahrain Grand Prix,PIA,13.0,24.984499999999997,24.553
+2025,Bahrain Grand Prix,SAI,13.0,24.984499999999997,24.577
+2025,Bahrain Grand Prix,BEA,13.0,24.984499999999997,24.643
+2025,Bahrain Grand Prix,LAW,13.0,24.984499999999997,25.192
+2025,Bahrain Grand Prix,ALB,15.0,24.832,25.424
+2025,Bahrain Grand Prix,ALO,15.0,24.832,24.958
+2025,Bahrain Grand Prix,LEC,16.0,24.832,24.701
+2025,Bahrain Grand Prix,HAM,16.0,24.832,24.36
+2025,Bahrain Grand Prix,VER,25.0,24.832,28.242
+2025,Bahrain Grand Prix,OCO,26.0,24.832,25.165
+2025,Bahrain Grand Prix,ANT,26.0,24.832,24.417
+2025,Bahrain Grand Prix,HUL,26.0,24.832,24.187
+2025,Bahrain Grand Prix,GAS,27.0,24.859,24.905
+2025,Bahrain Grand Prix,DOO,27.0,24.859,25.139
+2025,Bahrain Grand Prix,HAD,27.0,24.859,24.422
+2025,Bahrain Grand Prix,PIA,31.0,24.859,24.968
+2025,Bahrain Grand Prix,RUS,31.0,24.859,24.047
+2025,Bahrain Grand Prix,LEC,31.0,24.859,24.237
+2025,Bahrain Grand Prix,NOR,31.0,24.859,24.059
+2025,Bahrain Grand Prix,HAM,31.0,24.859,24.423
+2025,Bahrain Grand Prix,SAI,31.0,24.859,24.455
+2025,Bahrain Grand Prix,TSU,31.0,24.859,24.795
+2025,Bahrain Grand Prix,ALB,31.0,24.859,26.091
+2025,Bahrain Grand Prix,BEA,31.0,24.859,25.032
+2025,Bahrain Grand Prix,ANT,31.0,24.859,24.642
+2025,Bahrain Grand Prix,ALO,31.0,24.859,24.783
+2025,Bahrain Grand Prix,STR,31.0,24.859,24.491
+2025,Bahrain Grand Prix,LAW,31.0,24.859,23.942
+2025,Bahrain Grand Prix,BOR,31.0,24.859,25.306
+2025,Bahrain Grand Prix,SAI,43.0,24.783,36.961
+2025,British Grand Prix,ANT,8.0,28.9555,28.722
+2025,British Grand Prix,STR,9.0,28.9555,28.865
+2025,British Grand Prix,RUS,9.0,28.9555,28.665
+2025,British Grand Prix,LEC,9.0,28.9555,29.089
+2025,British Grand Prix,HAD,9.0,28.9555,28.633
+2025,British Grand Prix,BEA,9.0,28.9555,29.092
+2025,Canadian Grand Prix,VER,11.0,24.5,23.678
+2025,Canadian Grand Prix,RUS,12.0,24.5,23.344
+2025,Canadian Grand Prix,HAD,12.0,23.678,24.063
+2025,Canadian Grand Prix,ANT,13.0,23.678,23.235
+2025,Canadian Grand Prix,COL,13.0,23.511000000000003,24.547
+2025,Canadian Grand Prix,HAM,14.0,23.678,23.613
+2025,Canadian Grand Prix,ALO,14.0,23.678,24.005
+2025,Canadian Grand Prix,PIA,15.0,23.678,23.219
+2025,Canadian Grand Prix,BEA,17.0,23.6455,23.626
+2025,Canadian Grand Prix,HUL,18.0,23.6455,23.422
+2025,Canadian Grand Prix,ALB,22.0,23.619500000000002,23.797
+2025,Canadian Grand Prix,STR,23.0,23.619500000000002,23.656
+2025,Canadian Grand Prix,LEC,27.0,23.641,23.488
+2025,Canadian Grand Prix,NOR,28.0,23.641,23.263
+2025,Canadian Grand Prix,VER,36.0,23.619500000000002,23.079
+2025,Canadian Grand Prix,ANT,37.0,23.619500000000002,23.547
+2025,Canadian Grand Prix,LAW,37.0,23.613,23.283
+2025,Canadian Grand Prix,RUS,41.0,23.547,24.312
+2025,Canadian Grand Prix,PIA,44.0,23.58,23.047
+2025,Canadian Grand Prix,HAM,44.0,23.58,23.36
+2025,Canadian Grand Prix,NOR,46.0,23.5175,23.328
+2025,Canadian Grand Prix,ALO,49.0,23.488,23.519
+2025,Canadian Grand Prix,STR,50.0,23.519,34.782
+2025,Canadian Grand Prix,LEC,52.0,23.519,23.875
+2025,Canadian Grand Prix,GAS,52.0,23.533,23.985
+2025,Canadian Grand Prix,TSU,55.0,23.58,25.063
+2025,Canadian Grand Prix,OCO,56.0,23.58,24.453
+2025,Canadian Grand Prix,SAI,56.0,23.58,23.266
+2025,Canadian Grand Prix,ALO,65.0,23.613,18.313
+2025,Canadian Grand Prix,HUL,65.0,23.613,18.36
+2025,Canadian Grand Prix,RUS,66.0,23.613,18.234
+2025,Canadian Grand Prix,VER,66.0,23.613,18.188
+2025,Canadian Grand Prix,ANT,66.0,23.613,18.25
+2025,Canadian Grand Prix,PIA,66.0,23.613,26.454
+2025,Chinese Grand Prix,GAS,9.0,23.363,23.066
+2025,Chinese Grand Prix,TSU,10.0,23.363,22.471
+2025,Chinese Grand Prix,OCO,10.0,23.363,23.04
+2025,Chinese Grand Prix,DOO,10.0,23.363,22.749
+2025,Chinese Grand Prix,ANT,11.0,23.2145,22.787
+2025,Chinese Grand Prix,HAD,11.0,23.2145,22.875
+2025,Chinese Grand Prix,HAM,12.0,23.04,22.355
+2025,Chinese Grand Prix,VER,12.0,23.04,22.474
+2025,Chinese Grand Prix,PIA,13.0,22.875,23.855
+2025,Chinese Grand Prix,RUS,13.0,22.875,22.285
+2025,Chinese Grand Prix,NOR,14.0,22.787,22.202
+2025,Chinese Grand Prix,LEC,14.0,22.787,22.282
+2025,Chinese Grand Prix,SAI,16.0,22.749,22.836
+2025,Chinese Grand Prix,LAW,17.0,22.749,22.522
+2025,Chinese Grand Prix,ALB,19.0,22.749,23.503
+2025,Chinese Grand Prix,HUL,19.0,22.749,22.981
+2025,Chinese Grand Prix,BEA,25.0,22.787,22.885
+2025,Chinese Grand Prix,BOR,25.0,22.787,22.854
+2025,Chinese Grand Prix,LAW,29.0,22.836,22.316
+2025,Chinese Grand Prix,HAD,32.0,22.8115,22.259
+2025,Chinese Grand Prix,TSU,34.0,22.787,22.492
+2025,Chinese Grand Prix,STR,35.0,22.787,22.895
+2025,Chinese Grand Prix,HAM,36.0,22.768,22.394
+2025,Chinese Grand Prix,TSU,45.0,22.768,37.94
+2025,Dutch Grand Prix,STR,7.0,24.5,17.677
+2025,Dutch Grand Prix,ALO,17.0,17.677,17.381
+2025,Dutch Grand Prix,TSU,18.0,17.677,18.323
+2025,Dutch Grand Prix,COL,18.0,17.677,18.004
+2025,Dutch Grand Prix,HUL,18.0,17.677,17.719
+2025,Dutch Grand Prix,LEC,21.0,17.719,17.149
+2025,Dutch Grand Prix,BOR,21.0,17.719,17.785
+2025,Dutch Grand Prix,PIA,22.0,17.719,17.507
+2025,Dutch Grand Prix,NOR,22.0,17.719,20.069
+2025,Dutch Grand Prix,VER,22.0,17.719,18.747
+2025,Dutch Grand Prix,HAD,22.0,17.719,17.392
+2025,Dutch Grand Prix,RUS,22.0,17.719,18.74
+2025,Dutch Grand Prix,LAW,22.0,17.719,17.557
+2025,Dutch Grand Prix,SAI,22.0,17.719,17.729
+2025,Dutch Grand Prix,ALB,22.0,17.719,19.763
+2025,Dutch Grand Prix,ANT,22.0,17.719,17.59
+2025,Dutch Grand Prix,GAS,22.0,17.698,19.177
+2025,Dutch Grand Prix,ALO,39.0,17.785,17.902
+2025,Dutch Grand Prix,ANT,50.0,17.8435,17.635
+2025,Dutch Grand Prix,SAI,50.0,17.8435,30.299
+2025,Dutch Grand Prix,STR,51.0,17.785,17.692
+2025,Dutch Grand Prix,OCO,51.0,17.785,18.121
+2025,Dutch Grand Prix,PIA,52.0,17.785,18.76
+2025,Dutch Grand Prix,NOR,52.0,17.785,22.601
+2025,Dutch Grand Prix,VER,52.0,17.785,18.268
+2025,Dutch Grand Prix,HAD,52.0,17.785,18.549
+2025,Dutch Grand Prix,RUS,52.0,17.785,17.343
+2025,Dutch Grand Prix,ALB,52.0,17.785,17.926
+2025,Dutch Grand Prix,LAW,51.0,17.785,18.533
+2025,Dutch Grand Prix,BOR,59.0,18.069,17.554
+2025,Dutch Grand Prix,COL,64.0,18.017,18.064
+2025,Dutch Grand Prix,SAI,64.0,18.017,18.071
+2025,Emilia Romagna Grand Prix,GAS,8.0,30.472,31.522
+2025,Emilia Romagna Grand Prix,LEC,9.0,30.472,29.587
+2025,Emilia Romagna Grand Prix,LAW,9.0,30.472,29.652
+2025,Emilia Romagna Grand Prix,RUS,10.0,30.997,29.716
+2025,Emilia Romagna Grand Prix,SAI,10.0,30.997,30.148
+2025,Emilia Romagna Grand Prix,ALO,11.0,30.062,30.237
+2025,Emilia Romagna Grand Prix,BOR,11.0,30.062,30.775
+2025,Emilia Romagna Grand Prix,PIA,12.0,29.932000000000002,30.935
+2025,Emilia Romagna Grand Prix,STR,13.0,30.1925,31.266
+2025,Emilia Romagna Grand Prix,COL,21.0,30.3545,30.258
+2025,Emilia Romagna Grand Prix,NOR,27.0,30.258,29.507
+2025,Emilia Romagna Grand Prix,VER,28.0,30.258,30.051
+2025,Emilia Romagna Grand Prix,ALB,28.0,30.258,30.566
+2025,Emilia Romagna Grand Prix,HAD,28.0,30.258,30.144
+2025,Emilia Romagna Grand Prix,ANT,28.0,30.258,29.94
+2025,Emilia Romagna Grand Prix,HAM,28.0,30.258,30.038
+2025,Emilia Romagna Grand Prix,LEC,28.0,30.2475,31.974
+2025,Emilia Romagna Grand Prix,VER,45.0,30.3635,29.784
+2025,Emilia Romagna Grand Prix,NOR,45.0,30.3635,31.796
+2025,Hungarian Grand Prix,HUL,4.0,24.5,21.6
+2025,Hungarian Grand Prix,COL,12.0,21.6,30.205
+2025,Hungarian Grand Prix,OCO,13.0,21.6,22.416
+2025,Hungarian Grand Prix,ALB,13.0,21.6,21.292
+2025,Hungarian Grand Prix,SAI,14.0,25.9025,21.734
+2025,Hungarian Grand Prix,VER,16.0,21.734,21.219
+2025,Hungarian Grand Prix,PIA,17.0,21.734,21.141
+2025,Hungarian Grand Prix,LEC,18.0,21.667,21.28
+2025,Hungarian Grand Prix,RUS,18.0,21.667,21.601
+2025,Hungarian Grand Prix,TSU,19.0,21.6,21.328
+2025,Hungarian Grand Prix,ANT,20.0,21.6,22.188
+2025,Hungarian Grand Prix,BEA,29.0,21.6,21.714
+2025,Hungarian Grand Prix,NOR,30.0,21.6,20.884
+2025,Hungarian Grand Prix,GAS,31.0,21.6,21.588
+2025,Hungarian Grand Prix,HAD,32.0,21.6,21.124
+2025,Hungarian Grand Prix,COL,34.0,21.588,26.234
+2025,Hungarian Grand Prix,STR,35.0,21.588,21.512
+2025,Hungarian Grand Prix,TSU,36.0,21.588,21.545
+2025,Hungarian Grand Prix,ALB,37.0,21.588,22.707
+2025,Hungarian Grand Prix,ALO,38.0,21.5665,22.307
+2025,Hungarian Grand Prix,LEC,39.0,21.5665,21.148
+2025,Hungarian Grand Prix,BOR,39.0,21.588,21.867
+2025,Hungarian Grand Prix,LAW,39.0,21.588,22.187
+2025,Hungarian Grand Prix,HUL,40.0,21.588,28.943
+2025,Hungarian Grand Prix,HAM,41.0,21.6,21.13
+2025,Hungarian Grand Prix,RUS,42.0,21.6,21.58
+2025,Hungarian Grand Prix,PIA,44.0,21.594,21.005
+2025,Hungarian Grand Prix,VER,47.0,21.588,21.274
+2025,Hungarian Grand Prix,SAI,50.0,21.584,21.623
+2025,Italian Grand Prix,LAW,8.0,24.5,24.11
+2025,Italian Grand Prix,BEA,17.0,24.11,25.171
+2025,Italian Grand Prix,TSU,18.0,24.11,24.323
+2025,Italian Grand Prix,BOR,19.0,24.6405,26.08
+2025,Italian Grand Prix,ALO,19.0,24.6405,25.205
+2025,Italian Grand Prix,RUS,26.0,25.171,25.063
+2025,Italian Grand Prix,ANT,27.0,25.171,24.992
+2025,Italian Grand Prix,SAI,29.0,25.063,24.735
+2025,Italian Grand Prix,HAD,31.0,25.0275,24.227
+2025,Italian Grand Prix,LEC,32.0,25.0275,24.251
+2025,Italian Grand Prix,COL,32.0,25.0275,25.075
+2025,Italian Grand Prix,VER,36.0,24.992,24.37
+2025,Italian Grand Prix,HAM,37.0,24.863500000000002,24.0
+2025,Italian Grand Prix,PIA,44.0,24.7855,23.453
+2025,Italian Grand Prix,NOR,45.0,24.7855,27.454
+2025,Italian Grand Prix,STR,48.0,24.7855,38.527
+2025,Italian Grand Prix,GAS,48.0,24.7855,24.962
+2025,Italian Grand Prix,OCO,50.0,24.899,30.667
+2025,Japanese Grand Prix,STR,8.0,24.5,23.639
+2025,Japanese Grand Prix,DOO,14.0,23.639,23.157
+2025,Japanese Grand Prix,RUS,18.0,23.398,23.219
+2025,Japanese Grand Prix,PIA,19.0,23.398,22.917
+2025,Japanese Grand Prix,VER,20.0,23.219,24.578
+2025,Japanese Grand Prix,NOR,20.0,23.219,23.219
+2025,Japanese Grand Prix,LEC,20.0,23.219,23.234
+2025,Japanese Grand Prix,HUL,21.0,23.219,23.625
+2025,Japanese Grand Prix,BEA,22.0,23.219,24.812
+2025,Japanese Grand Prix,TSU,22.0,23.219,24.079
+2025,Japanese Grand Prix,ALB,23.0,23.2265,23.0
+2025,Japanese Grand Prix,ALO,23.0,23.2265,25.682
+2025,Japanese Grand Prix,GAS,23.0,23.2265,26.02
+2025,Japanese Grand Prix,HAD,24.0,23.4295,23.25
+2025,Japanese Grand Prix,HAM,29.0,23.4375,23.016
+2025,Japanese Grand Prix,STR,29.0,23.4375,23.708
+2025,Japanese Grand Prix,ANT,30.0,23.4375,24.344
+2025,Japanese Grand Prix,BOR,30.0,23.25,23.359
+2025,Japanese Grand Prix,OCO,31.0,23.625,24.442
+2025,Japanese Grand Prix,LAW,32.0,23.492,23.469
+2025,Japanese Grand Prix,SAI,32.0,23.492,23.219
+2025,Miami Grand Prix,BOR,18.0,24.5,22.199
+2025,Miami Grand Prix,STR,19.0,24.5,22.283
+2025,Miami Grand Prix,HAD,21.0,22.241,22.199
+2025,Miami Grand Prix,OCO,22.0,22.241,23.074
+2025,Miami Grand Prix,VER,25.0,22.241,22.44
+2025,Miami Grand Prix,ALB,25.0,22.241,21.972
+2025,Miami Grand Prix,TSU,26.0,22.404,22.581
+2025,Miami Grand Prix,HAM,27.0,22.3615,23.15
+2025,Miami Grand Prix,ALO,27.0,22.3615,23.489
+2025,Miami Grand Prix,LAW,27.0,22.44,22.376
+2025,Miami Grand Prix,PIA,28.0,22.44,22.095
+2025,Miami Grand Prix,NOR,28.0,22.44,22.004
+2025,Miami Grand Prix,RUS,28.0,22.44,24.208
+2025,Miami Grand Prix,LEC,28.0,22.44,22.158
+2025,Miami Grand Prix,GAS,31.0,22.408,22.089
+2025,Miami Grand Prix,HUL,35.0,22.376,22.16
+2025,Monaco Grand Prix,COL,12.0,30.901000000000003,24.37
+2025,Monaco Grand Prix,HAD,13.0,24.486,24.094
+2025,Monaco Grand Prix,ALO,15.0,24.37,25.468
+2025,Monaco Grand Prix,OCO,15.0,24.37,25.64
+2025,Monaco Grand Prix,STR,16.0,24.486,23.958
+2025,Monaco Grand Prix,BEA,16.0,24.486,24.433
+2025,Monaco Grand Prix,HAM,17.0,24.486,23.516
+2025,Monaco Grand Prix,NOR,18.0,24.433,24.515
+2025,Monaco Grand Prix,HAD,18.0,24.4015,23.75
+2025,Monaco Grand Prix,PIA,19.0,24.4015,25.859
+2025,Monaco Grand Prix,LEC,21.0,24.433,23.531
+2025,Monaco Grand Prix,BOR,25.0,24.4015,24.525
+2025,Monaco Grand Prix,COL,25.0,24.4015,24.641
+2025,Monaco Grand Prix,VER,27.0,24.4015,24.141
+2025,Monaco Grand Prix,OCO,27.0,24.4595,24.752
+2025,Monaco Grand Prix,LAW,30.0,24.4595,23.906
+2025,Monaco Grand Prix,ALB,31.0,24.4595,23.882
+2025,Monaco Grand Prix,BOR,34.0,24.4015,24.443
+2025,Monaco Grand Prix,LAW,39.0,24.433,24.047
+2025,Monaco Grand Prix,ALB,39.0,24.433,23.985
+2025,Monaco Grand Prix,HUL,43.0,24.37,24.49
+2025,Monaco Grand Prix,PIA,47.0,24.4015,23.93
+2025,Monaco Grand Prix,LEC,48.0,24.4015,23.578
+2025,Monaco Grand Prix,SAI,47.0,24.37,24.406
+2025,Monaco Grand Prix,NOR,49.0,24.37,23.469
+2025,Monaco Grand Prix,SAI,52.0,24.3595,24.006
+2025,Monaco Grand Prix,RUS,52.0,24.3595,19.406
+2025,Monaco Grand Prix,HAM,55.0,24.244999999999997,24.041
+2025,Monaco Grand Prix,RUS,61.0,24.141,24.92
+2025,Monaco Grand Prix,STR,63.0,24.244999999999997,25.875
+2025,Monaco Grand Prix,RUS,67.0,24.349,23.977
+2025,Monaco Grand Prix,ANT,68.0,24.244999999999997,24.374
+2025,Monaco Grand Prix,TSU,72.0,24.3595,23.892
+2025,Monaco Grand Prix,VER,76.0,24.349,23.59
+2025,Saudi Arabian Grand Prix,BEA,17.0,21.563,21.942
+2025,Saudi Arabian Grand Prix,PIA,18.0,21.563,21.301
+2025,Saudi Arabian Grand Prix,ANT,18.0,21.563,20.469
+2025,Saudi Arabian Grand Prix,ALO,18.0,21.563,21.987
+2025,Saudi Arabian Grand Prix,RUS,19.0,21.704,20.235
+2025,Saudi Arabian Grand Prix,LAW,19.0,21.563,20.548
+2025,Saudi Arabian Grand Prix,VER,20.0,21.563,26.05
+2025,Saudi Arabian Grand Prix,SAI,20.0,21.563,23.996
+2025,Saudi Arabian Grand Prix,ALB,21.0,21.432,22.118
+2025,Saudi Arabian Grand Prix,HAM,22.0,21.563,20.281
+2025,Saudi Arabian Grand Prix,LEC,28.0,21.563,20.153
+2025,Saudi Arabian Grand Prix,DOO,31.0,21.432,21.634
+2025,Saudi Arabian Grand Prix,HUL,32.0,21.432,20.5
+2025,Saudi Arabian Grand Prix,NOR,33.0,21.563,20.394
+2025,Saudi Arabian Grand Prix,HAD,33.0,21.563,20.699
+2025,Saudi Arabian Grand Prix,STR,38.0,21.0,20.466
+2025,Spanish Grand Prix,ALB,5.0,24.5,30.793
+2025,Spanish Grand Prix,BEA,7.0,30.793,21.941
+2025,Spanish Grand Prix,TSU,7.0,30.793,21.855
+2025,Spanish Grand Prix,HUL,8.0,30.793,22.314
+2025,Spanish Grand Prix,SAI,8.0,30.793,30.55
+2025,Spanish Grand Prix,GAS,9.0,21.941,22.148
+2025,Spanish Grand Prix,VER,12.0,22.231,21.801
+2025,Spanish Grand Prix,COL,13.0,22.148,22.536
+2025,Spanish Grand Prix,ALO,14.0,22.148,23.155
+2025,Spanish Grand Prix,HAM,15.0,22.231,22.001
+2025,Spanish Grand Prix,LEC,16.0,22.314,24.588
+2025,Spanish Grand Prix,LAW,17.0,22.231,21.946
+2025,Spanish Grand Prix,HAD,18.0,22.314,21.886
+2025,Spanish Grand Prix,BOR,18.0,22.314,22.085
+2025,Spanish Grand Prix,RUS,19.0,22.231,21.924
+2025,Spanish Grand Prix,OCO,19.0,22.231,22.673
+2025,Spanish Grand Prix,NOR,20.0,22.116500000000002,22.511
+2025,Spanish Grand Prix,ANT,20.0,22.116500000000002,22.358
+2025,Spanish Grand Prix,PIA,21.0,22.116500000000002,21.726
+2025,Spanish Grand Prix,TSU,23.0,22.148,22.143
+2025,Spanish Grand Prix,ALB,25.0,22.1455,37.619
+2025,Spanish Grand Prix,VER,28.0,22.148,22.064
+2025,Spanish Grand Prix,GAS,30.0,22.1455,22.123
+2025,Spanish Grand Prix,SAI,33.0,22.143,22.212
+2025,Spanish Grand Prix,BEA,34.0,22.143,22.09
+2025,Spanish Grand Prix,LEC,39.0,22.143,21.798
+2025,Spanish Grand Prix,COL,38.0,22.143,22.197
+2025,Spanish Grand Prix,RUS,40.0,22.143,21.771
+2025,Spanish Grand Prix,ALO,41.0,22.133000000000003,22.353
+2025,Spanish Grand Prix,OCO,42.0,22.133000000000003,22.48
+2025,Spanish Grand Prix,LAW,43.0,22.143,21.971
+2025,Spanish Grand Prix,TSU,43.0,22.143,21.81
+2025,Spanish Grand Prix,HUL,44.0,22.1455,21.919
+2025,Spanish Grand Prix,HAM,45.0,22.143,24.391
+2025,Spanish Grand Prix,VER,46.0,22.133000000000003,21.804
+2025,Spanish Grand Prix,NOR,47.0,22.133000000000003,21.873
+2025,Spanish Grand Prix,HAD,47.0,22.123,22.169
+2025,Spanish Grand Prix,PIA,48.0,22.123,21.908
+2025,Spanish Grand Prix,ANT,48.0,22.1065,23.447
+2025,Spanish Grand Prix,BOR,48.0,22.123,22.966
+2025,Spanish Grand Prix,PIA,54.0,22.133000000000003,22.771
+2025,Spanish Grand Prix,NOR,54.0,22.133000000000003,23.62
+2025,Spanish Grand Prix,VER,54.0,22.133000000000003,22.394
+2025,Spanish Grand Prix,ALO,53.0,22.133000000000003,21.956
+2025,Spanish Grand Prix,BEA,53.0,22.133000000000003,22.815
+2025,Spanish Grand Prix,TSU,53.0,22.133000000000003,22.258
+2025,Spanish Grand Prix,LEC,54.0,22.133000000000003,22.342
+2025,Spanish Grand Prix,RUS,54.0,22.133000000000003,23.034
+2025,Spanish Grand Prix,HAM,54.0,22.133000000000003,22.901

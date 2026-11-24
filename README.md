@@ -4,15 +4,39 @@ An end-to-end Formula 1 race analytics and pit strategy optimization platform. T
 
 ---
 
+## Current evaluation
+
+The dataset contains **33,569 recorded lap rows**. The latest calibrated XGBoost evaluation achieved **89.7% coverage across 311,485 forecast cases per model**. Multiple forecast horizons can target the same recorded lap. The stay-out point model scored **0.9940 pace R²** and **0.8276 degradation R²** across five held-out circuit folds.
+
+[Download the one-page results](docs/f1-current-evaluation.pdf) · [Read the evaluation and strategy report](docs/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md)
+
+## Circuit-held-out pace and tyre evaluation
+
+Run `python -m ml.forecast_evaluation` from the repository root. The first run saves five circuit folds in `forecast_results/folds.csv`. Subsequent runs reuse them. Three inner circuit folds select a model by cumulative error over the next three consecutive clean laps in the same stint. The dashboard uses the saved model that held out the selected circuit for its stay-out pace forecast.
+
+The forecast starts when a driver finishes a lap. The inputs use observed tyre life, fresh-set status, compound allocation for the event, current temperature, completed field laps and the driver's recent stint history. Scores apply to future dry, green, same-stint laps. Each model forecasts the same eligible observations. The degradation score measures fuel-corrected pace change relative to the first observed clean stint lap. Traffic, driving style and tyre wear can all contribute to this quantity.
+
+The output includes every out-of-fold prediction, fold and circuit metrics, age and compound breakdowns, cumulative three-lap MAE, and a fold-4 residual plot. The 14-feature XGBoost comparison uses forecast-time inputs and the same one-lap horizon. Historical published scores used a different evaluation. The existing quantile model continues to drive Monte Carlo pit scenarios.
+
+Run `python -m unittest test_forecast_cutoff` to verify prediction invariance after truncating race telemetry. For independent later-season confirmation, run `python -m ml.confirm_forecasts path/to/later_laps.csv` with a compatible CSV. This uses frozen models and rejects overlapping seasons. The historical collector excludes races with red flags, so the benchmark covers a selected race population.
+
+## Experimental XGBoost strategy intervals
+
+Run `python -m ml.strategy_quantiles` followed by `python -m ml.replay_quantiles` from the repository root. These commands use the historical lap CSV, existing circuit-fold manifest and local FastF1 race timing cache. Outputs are versioned under `quantile_results_v1`. Each outer fold reserves separate circuits for hyperparameter selection and asymmetric interval calibration. Only the former group rejoins the model-fitting circuits after tuning. Overlapping forecast horizons measure forecast instances and should not be interpreted as independent laps.
+
+The dashboard checkbox **Compare experimental XGBoost pit probabilities** runs the held-out challenger beside the current engine. The strategy replay samples up to four stay-out and four fresh-set pit decisions per event with a fixed seed. It compares elapsed race times for the driven strategy, including pit-transition laps. The lap-level summary uses eligible clean target laps. These are different validation outcomes.
+
+Run `python -m unittest test_forecast_cutoff test_strategy_quantiles` for timestamp cutoff, quantile ordering, shared pre-stop trajectories and seed checks. A later-season confirmation can be run with `python -m ml.confirm_quantiles YEAR "Grand Prix name" --allocation HARD MEDIUM SOFT`, supplying numeric Pirelli compound specifications and access to FastF1 timing and weather.
+
 ## Documentation Roadmap
 
 This repository includes detailed academic and technical documentation structured across the three development stages of the project:
 
 | Document | Focus & Paradigm | Key Highlights |
 | :--- | :--- | :--- |
-| **[`01_ORIGINAL_PROJECT.md`](file:///c:/Projects/project-reviewed-phase-2/01_ORIGINAL_PROJECT.md)** | **Phase 1: Naive Baseline** | Analysis of the initial model, documentation of the 5 fatal leakage flaws (baseline pace leakage, lookahead bias, negative fuel mass, random 80/20 shuffle), and why $R^2=0.97$ was invalid. |
-| **[`02_ORIGINAL_PROJECT_14_FEATURES.md`](file:///c:/Projects/project-reviewed-phase-2/02_ORIGINAL_PROJECT_14_FEATURES.md)** | **Phase 1.5: 14-Feature Point Model** | Deterministic regression without Monte Carlo. Exact formulas for the 14 physics features, GroupKFold (k=5) evaluation on unseen circuits ($R^2=0.9176$ on pace, $R^2=0.5805$ on pure degradation, $\text{MAE}=0.4037\,\text{s}$), and gain importances. |
-| **[`03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md`](file:///c:/Projects/project-reviewed-phase-2/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md)** | **Phase 2: Final Probabilistic Engine** | Full multi-output quantile regression with Pinball Loss, 500-rollout Monte Carlo optimizer, out-lap cold tyre warmup penalty, 4-tier competitor rival reaction model, 24-circuit Safety Car model, and 15-race backtest validation ($60\%$ accuracy, $100\%$ precision). |
+| **[`01_ORIGINAL_PROJECT.md`](docs/01_ORIGINAL_PROJECT.md)** | **Phase 1: Naive Baseline** | Analysis of the initial model, documentation of the 5 fatal leakage flaws (baseline pace leakage, lookahead bias, negative fuel mass, random 80/20 shuffle), and why $R^2=0.97$ was invalid. |
+| **[`02_ORIGINAL_PROJECT_14_FEATURES.md`](docs/02_ORIGINAL_PROJECT_14_FEATURES.md)** | **Phase 1.5: 14-Feature Point Model** | Deterministic regression without Monte Carlo. Exact formulas for the 14 physics features, GroupKFold (k=5) evaluation on unseen circuits ($R^2=0.9078$ mean of listed pace folds, $R^2=0.5805$ on pure degradation, $\text{MAE}=0.4037\,\text{s}$), and gain importances. |
+| **[`03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md`](docs/03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md)** | **Phase 2: Final Probabilistic Engine** | Full multi-output quantile regression with Pinball Loss, 500-rollout Monte Carlo optimizer, out-lap cold tyre warmup penalty, 4-tier competitor rival reaction model, 24-circuit Safety Car model, and 15-race backtest validation ($60\%$ accuracy, $100\%$ precision). |
 
 ---
 
@@ -39,9 +63,7 @@ This repository includes detailed academic and technical documentation structure
 
 ```text
 .
-├── 01_ORIGINAL_PROJECT.md              # Phase 1: Baseline flaws & leakage analysis
-├── 02_ORIGINAL_PROJECT_14_FEATURES.md   # Phase 1.5: 14-Feature point-estimate model & GroupKFold
-├── 03_FINAL_PROJECT_QUANTILE_MONTE_CARLO.md # Phase 2: Quantile regression & Monte Carlo engine
+├── docs/                               # Project reports and current evaluation PDF
 ├── README.md                           # Master technical overview
 │
 ├── pipeline/                           # Data Pipeline & Feature Engineering

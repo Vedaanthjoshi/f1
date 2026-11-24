@@ -23,7 +23,7 @@ def render_advantage_chart(
     """Render the net undercut advantage line chart and decision status."""
     so_times = stay_out_row["p50_lap_times"]
     pit_times = chart_strat["p50_lap_times"]
-    horizon_laps_plot = list(range(sim_lap, sim_lap + len(so_times)))
+    horizon_laps_plot = list(range(sim_lap + 1, sim_lap + 1 + len(so_times)))
 
     lap_advantage = [so_times[i] - pit_times[i] for i in range(len(so_times))]
     net_undercut_advantage = list(pd.Series(lap_advantage).cumsum())

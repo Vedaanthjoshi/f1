@@ -88,6 +88,9 @@ def run_mc_simulation(
     feature_cols: list[str] | None = None,
     seed: int = 42,
     rival_gap_s: float | None = None,
+    quantile_bundle: dict | None = None,
+    forecast_origin: pd.DataFrame | None = None,
+    record_totals: bool = False,
 ) -> list[dict[str, Any]]:
     """
     Run Monte Carlo strategy evaluation across all candidate strategies.
@@ -111,15 +114,11 @@ def run_mc_simulation(
     rng = np.random.default_rng(seed)
     cover_rate = calculate_cover_rate(rival_gap_s)
 
-    # Pre-compute shared track environment arrays across horizon laps
-    evo_map = track_env.set_index('LapNumber')['track_evolution'].to_dict()
-    temp_map = track_env.set_index('LapNumber')['TrackTemp'].to_dict()
-    last_evo = list(evo_map.values())[-1] if evo_map else 0.0
-    last_temp = list(temp_map.values())[-1] if temp_map else 30.0
-
-    horizon_laps = [current_lap + n for n in range(horizon)]
-    evos   = np.array([evo_map.get(l, last_evo)  for l in horizon_laps])
-    temps  = np.array([temp_map.get(l, last_temp) for l in horizon_laps])
+    history = track_env.loc[track_env.LapNumber <= current_lap].sort_values("LapNumber")
+    observed = history.iloc[-1] if len(history) else {}
+    horizon_laps = np.arange(current_lap + 1, current_lap + horizon + 1)
+    evos = np.full(horizon, observed.get("track_evolution", 85.0))
+    temps = np.full(horizon, observed.get("TrackTemp", 30.0))
     # Fuel correction per horizon lap: model predicts lap_time_delta (above baseline,
     # fuel-corrected). To reconstruct raw lap time: baseline + delta + fuel_correction.
     fuel_corrections = np.array([
@@ -127,7 +126,7 @@ def run_mc_simulation(
     ])
 
     # --- Stay-Out baseline (one model call -> sample n_rollouts trajectories) ---
-    so_ages = np.array([current_state['tyre_age'] + n for n in range(horizon)])
+    so_ages = np.array([current_state['tyre_age'] + 1 + n for n in range(horizon)])
     so_df = _build_feature_batch(
         so_ages, current_state['compound_encoded'],
         current_state, evos, temps, feature_cols
@@ -136,13 +135,29 @@ def run_mc_simulation(
     # above fresh-tyre pace). Reconstruct absolute lap times for comparison:
     #   raw_lap_time = baseline_pace + predicted_delta + fuel_correction(lap_n)
     # fuel_corrections vary per lap number (less fuel = faster correction term).
-    so_p5, so_p50, so_p95 = _predict_quantiles(model, so_df)
-    so_std = np.maximum((so_p95 - so_p5) / (2 * 1.645), 1e-5)
-    so_delta_samples = rng.normal(loc=so_p50, scale=so_std, size=(n_rollouts, horizon))
+    def strategy_samples(frame, compound=None, pit_at=1):
+        if quantile_bundle is None:
+            low, median, high = _predict_quantiles(model, frame)
+            scale = np.maximum((high-low) / 3.29, 1e-5)
+            return median, rng.normal(median, scale, size=(n_rollouts,horizon))
+        from ml.strategy_quantiles import calibrated_prediction, sample_paths, scenario
+        if forecast_origin is None or len(forecast_origin) != 1 or horizon > 15:
+            raise ValueError("Challenger requires one completed lap and a horizon of at most 15.")
+        rows = scenario(forecast_origin,np.arange(1,horizon+1),compound,pit_at)
+        quantiles = calibrated_prediction(quantile_bundle,rows) - current_state["baseline_pace"]
+        return quantiles[:,1], sample_paths(quantiles,quantile_bundle["bank"],n_rollouts,rng)
+
+    so_p50, so_delta_samples = strategy_samples(so_df)
+    shared_sc = rng.random((n_rollouts,horizon)) < sc_rate
     so_lap_times = current_state['baseline_pace'] + so_delta_samples + fuel_corrections
     so_total = so_lap_times.sum(axis=1)
 
     results: list[dict[str, Any]] = []
+
+    intervals = {}
+    def trajectory_intervals(times):
+        return {h: np.quantile(times[:,:h].sum(axis=1),[.05,.5,.95]).tolist()
+                for h in (3,5,15) if h<=horizon}
 
     for strat in STRATEGIES:
         pit_offset = strat['pit_offset']
@@ -164,11 +179,13 @@ def run_mc_simulation(
                 'cover_rate':         0.0,
                 'p50_lap_times':      (current_state['baseline_pace'] + so_p50 + fuel_corrections).tolist(),
             })
+            if record_totals:
+                results[-1]['total_intervals'] = trajectory_intervals(so_lap_times)
             continue
 
         # Pit Strategy: build tyre-age profile around the pit lap
         pit_ages = np.array([
-            current_state['tyre_age'] + n if n < pit_offset else 1 + (n - pit_offset)
+            current_state['tyre_age'] + 1 + n if n < pit_offset else 1 + (n - pit_offset)
             for n in range(horizon)
         ], dtype=float)
 
@@ -176,10 +193,10 @@ def run_mc_simulation(
             pit_ages, strat_compound,
             current_state, evos, temps, feature_cols
         )
-        pit_p5, pit_p50, pit_p95 = _predict_quantiles(model, pit_df)
-        pit_std = np.maximum((pit_p95 - pit_p5) / (2 * 1.645), 1e-5)
-
-        pit_delta_samples = rng.normal(loc=pit_p50, scale=pit_std, size=(n_rollouts, horizon))
+        compound_name = {1:"SOFT",2:"MEDIUM",3:"HARD"}[strat_compound]
+        pit_p50, pit_delta_samples = strategy_samples(pit_df,compound_name,pit_offset+1)
+        pit_p50[:pit_offset] = so_p50[:pit_offset]
+        pit_delta_samples[:,:pit_offset] = so_delta_samples[:,:pit_offset]
         # Delta target: reconstruct absolute lap times for comparison.
         pit_lap_times = current_state['baseline_pace'] + pit_delta_samples + fuel_corrections
 
@@ -193,13 +210,16 @@ def run_mc_simulation(
         pit_lap_times[:, out_lap_col] += OUT_LAP_PENALTY_S
 
         # Safety Car stochastic events
-        sc_on_pit_lap = rng.binomial(1, sc_rate, size=n_rollouts).astype(bool)
+        sc_on_pit_lap = shared_sc[:,pit_offset]
         effective_pit_loss = np.where(
             sc_on_pit_lap,
             pit_loss_delta * SC_PIT_LOSS_MULTIPLIER,
             pit_loss_delta,
         )
         pit_lap_times[:, pit_offset] += effective_pit_loss
+
+        if record_totals:
+            intervals[strat['name']] = trajectory_intervals(pit_lap_times)
 
         # Per-lap net advantage before reaction
         base_net_gains_per_lap = so_lap_times - pit_lap_times
@@ -228,7 +248,7 @@ def run_mc_simulation(
             if lap_delta_p50[n] < 0:
                 crossover_rel = n
                 break
-        crossover_lap = (current_lap + crossover_rel) if crossover_rel is not None else None
+        crossover_lap = (current_lap + 1 + crossover_rel) if crossover_rel is not None else None
 
         # Adaptive decision rule: window open if >= 55% confidence and positive expected gain
         window_open = (p_net_gain >= 0.55) and (expected_gain > 0)
@@ -255,6 +275,10 @@ def run_mc_simulation(
         key=lambda r: r['expected_gain_s'],
         reverse=True,
     )
+    if record_totals:
+        for result in results:
+            if result["pit_offset"] is not None:
+                result["total_intervals"] = intervals[result["name"]]
     return stay_out + pit_strats
 
 

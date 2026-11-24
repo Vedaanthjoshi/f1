@@ -1,6 +1,23 @@
-# Phase 2: Final Probabilistic Strategy Engine (Quantile Regression & Monte Carlo Simulation)
+# F1 strategy engine and current evaluation
 
----
+## Current saved results
+
+The historical input contains **33,569 recorded lap rows** from 2024 and 2025 across 23 circuits. The quantile evaluation produced **311,485 forecast cases per model** across five circuit-held-out folds. Each case pairs a decision lap and a future target lap for an eligible strategy and horizon (1–15 laps). A target lap can be forecast from several earlier decisions. These overlapping cases share observations.
+
+| Evaluation | Metric | Saved result |
+|---|---|---:|
+| Stay-out point forecast, next lap | Mean fold R² for fuel-corrected pace | 0.9940 |
+| Stay-out point forecast, next lap | Mean fold R² for pace change from the first clean stint lap | 0.8276 |
+| Experimental calibrated XGBoost | Pooled coverage of nominal 90% intervals | 89.7% |
+| Experimental calibrated XGBoost | Mean interval width / mean absolute error of median prediction | 2.72 s / 0.57 s |
+| Experimental calibrated XGBoost | Fold 4 coverage / Monaco coverage | 80.4% / 56.8% |
+| Historical pit-call backtest | Correct calls / successful undercuts identified | 9 of 15 / 4 of 10 |
+
+The dashboard offers the calibrated challenger as an optional comparison. In the simulator replay, its three-lap elapsed-time interval covered 68 of 93 pit-stop outcomes (73.1%) and 102 of 111 stay-out outcomes (91.9%). Independent later-season confirmation remains pending.
+
+[One-page evaluation](f1-current-evaluation.pdf) · [Point forecasts](../forecast_results/fold.csv) · [Quantile evaluation](../quantile_results_v1/summary.csv) · [Strategy replay](../quantile_results_v1/strategy_replay_summary.csv) · [Saved pit calls](../backtest_results.csv)
+
+## Original Phase 2 implementation
 
 ## 1. Executive Summary
 
@@ -24,7 +41,7 @@ Where:
 - $\hat{y}_{0.50}$ ($p50$): Expected median degradation pace.
 - $\hat{y}_{0.95}$ ($p95$): Pessimistic boundary (severe graining / accelerated thermal wear).
 
-### Quantile Evaluation on Unseen Test Circuits:
+### Historical Phase 2 holdout (original evaluation protocol)
 - **$p05$ Pinball Loss:** $0.5788\,\text{s}$
 - **$p50$ Pinball Loss:** $1.3074\,\text{s}$
 - **$p95$ Pinball Loss:** $0.2611\,\text{s}$
@@ -130,5 +147,4 @@ False Positives (FP)         : 0  (Zero false undercut alarms)
 False Negatives (FN)         : 6  (Maintained STAY_OUT when pit was marginally viable)
 ```
 
-### Key Takeaway for Paper Defense
-The system achieves **$100\%$ precision**, ensuring that every time the algorithm recommends an undercut, it successfully delivers track position in real-world racing.
+The saved backtest issued four PIT recommendations. All four matched successful undercuts in this sample, while six other successful undercuts received STAY_OUT recommendations. These results describe the historical decision backtest; the calibrated challenger has a separate elapsed-time replay above.

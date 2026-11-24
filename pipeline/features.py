@@ -137,29 +137,13 @@ def apply_feature_engineering(df: pd.DataFrame, track_name: str | None = None) -
     engineered['fuel_corrected_time'] = engineered['LapTime_s'] - fuel_correction
 
     # ── 4. Track evolution proxy (Fix 2: causal expanding window) ───────────
-    # Step A: compute per-lap session median across all cars at that lap
-    lap_medians = (
-        engineered
-        .groupby('LapNumber')['LapTime_s']
-        .median()
-        .sort_index()
-    )
-    # Step B: expanding (cumulative) mean of those per-lap medians.
-    # At lap L the value reflects only laps 1..L — no future information.
-    # Using .shift(1) means strictly past laps; keeps lap-1 as NaN → ffill.
-    causal_evo = (
-        lap_medians
-        .expanding()
-        .mean()
-        .shift(1)         # strict past-only: lap L sees average of laps 1..L-1
-        .ffill()          # lap 1 inherits the global session median as seed
-        .bfill()
-    )
-    engineered['track_evolution'] = engineered['LapNumber'].map(causal_evo)
+    if "Time" in engineered:
+        ordered = engineered.sort_values("Time", kind="stable")
+        engineered["track_evolution"] = ordered.LapTime_s.shift().expanding().median().fillna(85.0)
+    else:
+        medians = engineered.groupby("LapNumber").LapTime_s.median()
+        engineered["track_evolution"] = engineered.LapNumber.map(medians.expanding().mean().shift())
 
-    # ── 5. Circuit physics features (Fix 6) ─────────────────────────────────
-    # These let the model generalise to unseen circuits by physical properties
-    # rather than relying solely on the circuit name embedding.
     engineered = apply_circuit_features(engineered, track_name=track_name)
 
     # ── 6. Physics Interactions & Non-linear Wear (14-Feature Suite) ────────

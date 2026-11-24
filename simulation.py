@@ -71,7 +71,8 @@ if __name__ == "__main__":
         'Track':           'Bahrain Grand Prix',
         'Driver':          'VER',
     }
-    track_env = ml[['LapNumber', 'track_evolution', 'TrackTemp']].drop_duplicates('LapNumber')
+    pit_loss = calculate_pit_loss(session, cutoff=ver_row['Time'])
+    track_env = ver_row[['LapNumber', 'track_evolution', 'TrackTemp']].to_frame().T
 
     print(f"\nRunning Phase 2 Monte Carlo simulation from Lap {sim_test_lap} (500 rollouts × 6 strategies)...")
     mc = run_mc_simulation(

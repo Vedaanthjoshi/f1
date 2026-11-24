@@ -11,6 +11,7 @@ import pandas as pd
 
 # Core domain modules
 from pipeline import fetch_season_schedule, load_race_session, process_telemetry_pipeline
+from engine.pit_loss import calculate_pit_loss
 from engine import run_mc_simulation, COMPOUND_MAP
 from ml import load_global_model, compute_shap_explanation
 
@@ -61,6 +62,65 @@ def process_pipeline(year: int, race: str, _session):
     return process_telemetry_pipeline(_session)
 
 
+@st.cache_resource
+def load_pace_forecast(path, modified):
+    import joblib
+    return joblib.load(path)
+
+
+def render_pace_forecast(laps, driver, lap, cutoff):
+    from pathlib import Path
+    from ml.forecast_evaluation import forecast, next_laps, origins
+
+    root = Path(__file__).resolve().parent
+    manifest = root / "forecast_results" / "folds.csv"
+    if not manifest.exists():
+        return
+    track = st.session_state["race"]
+    folds = pd.read_csv(manifest).set_index("Track").fold
+    if track not in folds:
+        return
+    path = manifest.parent / f"fold_{folds[track]}.joblib"
+    if not path.exists():
+        return
+    bundle = load_pace_forecast(path, path.stat().st_mtime_ns)
+    if track not in bundle["held_out"]:
+        return
+    history = laps.loc[laps.Time <= cutoff].assign(Season=st.session_state["year"], Track=track)
+    allocations = pd.read_csv(root / "pipeline" / "compound_allocations.csv")
+    data = origins(history, allocations)
+    row = data[(data.Driver == driver) & (data.LapNumber == lap)]
+    if row.empty:
+        return
+    future = next_laps(row)
+    future["Pace (s)"] = forecast(bundle, future).round(3)
+    future["Lap"] = lap + future.h
+    st.caption("Fuel-corrected pace if the driver stays on this tyre set")
+    st.dataframe(future[["Lap", "Pace (s)"]], hide_index=True)
+
+
+def challenger_origin(laps, cutoff, track, season, driver, lap):
+    from pathlib import Path
+    from ml.forecast_evaluation import origins
+    root = Path(__file__).resolve().parent
+    manifest = root / "forecast_results" / "folds.csv"
+    if not manifest.exists():
+        return None, None
+    folds = pd.read_csv(manifest).set_index("Track").fold
+    if track not in folds:
+        return None, None
+    path = root / "quantile_results_v1" / f"fold_{folds[track]}.joblib"
+    if not path.exists():
+        return None, None
+    bundle = load_pace_forecast(path,path.stat().st_mtime_ns)
+    if track not in bundle["held_out"]:
+        return None, None
+    history = laps.loc[laps.Time <= cutoff].assign(Track=track,Season=season)
+    data = origins(history,pd.read_csv(root / "pipeline" / "compound_allocations.csv"))
+    row = data[(data.Driver==driver) & (data.LapNumber==lap)]
+    return (bundle,row) if len(row)==1 else (None,None)
+
+
 # --- STRATEGY DASHBOARD VIEW ---
 def render_strategy_dashboard():
     model, features, _ = get_model()
@@ -79,7 +139,6 @@ def render_strategy_dashboard():
     st.success("Telemetry processed. Global AI Model loaded and ready.")
 
     ml_data = backend_payload["ml_data"]
-    pit_loss = backend_payload["pit_loss"]
     drivers = ml_data["Driver"].unique().tolist()
 
     # Sidebar: Driver Matchup
@@ -132,8 +191,10 @@ def render_strategy_dashboard():
         return
 
     # Extract gap for competitor reaction modeling
-    gap_at_sim = gap_df[gap_df["LapNumber"] == sim_lap]["Gap_Seconds"] if not gap_df.empty else pd.Series()
-    rival_gap_s = float(gap_at_sim.iloc[0]) if not gap_at_sim.empty else None
+    cutoff = driver_state_df.iloc[0]["Time"]
+    pit_loss = calculate_pit_loss(session, cutoff=cutoff)
+    known_gaps = gap_df[(gap_df.Time_A <= cutoff) & (gap_df.Time_B <= cutoff)] if len(gap_df) else gap_df
+    rival_gap_s = float(known_gaps.sort_values("LapNumber").iloc[-1]["Gap_Seconds"]) if len(known_gaps) else None
 
     current_state = {
         "tyre_age":         driver_state_df.iloc[0]["tyre_age"],
@@ -142,7 +203,9 @@ def render_strategy_dashboard():
         "Track":            st.session_state["race"],
         "Driver":           driver_a,
     }
-    track_env = ml_data[["LapNumber", "track_evolution", "TrackTemp"]].drop_duplicates("LapNumber")
+    track_env = driver_state_df[["LapNumber", "track_evolution", "TrackTemp"]]
+
+    render_pace_forecast(ml_data, driver_a, sim_lap, cutoff)
 
     # Run Monte Carlo simulation across 6 strategies
     with st.spinner(f"Running {n_rollouts:,} Monte Carlo rollouts across 6 strategies..."):
@@ -160,6 +223,19 @@ def render_strategy_dashboard():
 
     # Strategy Table
     render_strategy_table(mc_results, st.session_state["race"], n_rollouts)
+
+    if st.checkbox("Compare experimental XGBoost pit probabilities"):
+        bundle, origin = challenger_origin(ml_data,cutoff,current_state["Track"],
+                                           st.session_state["year"],driver_a,sim_lap)
+        if bundle is None:
+            st.info("A held-out challenger and a clean forecast lap are required for this comparison.")
+        else:
+            candidate = run_mc_simulation(model,sim_lap,current_state,track_env,pit_loss,
+                current_state["Track"],n_rollouts,feature_cols=features,rival_gap_s=rival_gap_s,
+                quantile_bundle=bundle,forecast_origin=origin)
+            comparison = pd.DataFrame(mc_results)[["name","p_net_gain"]].merge(
+                pd.DataFrame(candidate)[["name","p_net_gain"]],on="name",suffixes=("_current","_challenger"))
+            st.dataframe(comparison,hide_index=True)
 
     # Chart 3: Net Undercut Advantage
     st.divider()

@@ -1,6 +1,9 @@
 streamlit
 fastf1
-pandas
+pandas>=2.2
 plotly
 scikit-learn
 numpy
+xgboost>=2.0
+matplotlib
+joblib

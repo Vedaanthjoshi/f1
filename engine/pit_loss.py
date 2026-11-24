@@ -8,7 +8,7 @@ from actual FastF1 session in-lap and out-lap timing transponders.
 import pandas as pd
 
 
-def calculate_pit_loss(session) -> float:
+def calculate_pit_loss(session, cutoff=None) -> float:
     """
     Calculates the median time spent in the pit lane for the given session.
     Matches in-laps (Stint N) with out-laps (Stint N+1) per driver.
@@ -32,6 +32,8 @@ def calculate_pit_loss(session) -> float:
     )
     pit_stops['PitLaneTime'] = (pit_stops['PitOutTime'] - pit_stops['PitInTime']).dt.total_seconds()
     
+    if cutoff is not None:
+        pit_stops = pit_stops.loc[pit_stops.PitOutTime <= cutoff]
     median_loss = pit_stops['PitLaneTime'].median()
     if pd.isna(median_loss):
         # Fallback to standard 24.5s if no complete pit stop pair found
